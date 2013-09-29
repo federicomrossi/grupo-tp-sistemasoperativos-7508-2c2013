@@ -18,8 +18,14 @@ sub Grabar_L
 {
 	my $message = '';
 	my $log_full_file_path= '';
+    my $log_size = 0;
     my $log_size_max = 0;
-	my @params = @_;
+    my $log_line = '';	
+    my @params = @_;
+    my $log_dir = '';
+    my $log_file_name = '';
+    my $log_file_ext = '';
+    my $log_full_file_path = '';
 
 	if(!($params[0])){
 		return 1;
@@ -28,7 +34,8 @@ sub Grabar_L
 	$log_size_max = get_log_max_size();
 	if ( $params[3]){
 		# El log se escribe en un archivo distinto al por defecto
-		$log_full_file_path = $params[3]
+		$log_full_file_path = $params[3];
+        print $log_full_file_path;
 	} else {
             $log_dir = get_log_dir();
             $log_file_ext = get_log_extension();
@@ -44,9 +51,9 @@ sub Grabar_L
 
     $log_line = get_date()
                 . " - " . get_username()
-                . " - " . $passed_params[0]
-                . " - " . $passed_params[1]
-                . " - (" . $passed_params[2]
+                . " - " . $params[0]
+                . " - " . $params[1]
+                . " - (" . $params[2]
                 . ") " . $message . "\n";
 
     open (LOG_FILE, ">>$log_full_file_path");
@@ -238,3 +245,5 @@ sub truncate_file
 
     return 0;
 }
+
+1;
