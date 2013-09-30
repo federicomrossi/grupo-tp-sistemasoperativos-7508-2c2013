@@ -13,7 +13,8 @@ log="$CONFDIR/Instalar_TP.log"
 
 
 log (){
-	perl -I$BIN -Mfunctions -e "functions::Grabar_L('Grabar_L', '$1', '$2', '$log')"	
+	perl -I$BIN -Mfunctions -e "functions::Grabar_L('Grabar_L', '$1', '$2', '$log')"
+	echo $2	
 }
 log I "hola como va buey"
 exit 0
