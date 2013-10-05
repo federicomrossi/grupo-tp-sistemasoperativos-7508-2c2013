@@ -57,8 +57,9 @@ sub grabarSiCorresponde
 	$resOperacion = $_[3];
 
 	@comandosDeLog = {"Recibir_B", "Reservar_B"};
+	$tam = scalar @comandosDeLog;
 
-	for($i = 0; $i < (scalar @comandosDeLog); $i++)
+	for($i = 0; $i < $tam; $i++)
 	{
 		if($comando eq $comandosDeLog[$i])
 		{
@@ -111,23 +112,37 @@ $dirDuplicados = $destino . "/dup/";
 
 
 # Verificamos si el origen existe
-open($origen, $origen) or (grabarSiCorresponde($comando, $origen, $destino, 1) and exit 1);
+if (!open($origen, $origen)) {
+	grabarSiCorresponde($comando, $origen, $destino, 1);
+	exit 1;
+}
+# Cerramos el archivo a mover
 close $origen;
 
 # Verificamos si el directorio destino existe. De ser así, lo dejamos abierto.
-opendir($destino, $destino) or (grabarSiCorresponde($comando, $origen, $destino, 2) and exit 2);
+if (!opendir($destino, $destino)) {
+	grabarSiCorresponde($comando, $origen, $destino, 2);
+	exit 2;
+}
 # Cerramos el directorio
 closedir $destino;
 
 # Verificamos si el origen es igual al destino en cuyo caso ya se movió el
 # archivo
 ($pathOrigen, $nombreArchivo) = obtenerDir($origen);
-(grabarSiCorresponde($comando, $origen, $destino, 0) and exit 0) if($pathOrigen eq $destino);
+if($pathOrigen eq $destino) {
+	grabarSiCorresponde($comando, $origen, $destino, 0);
+	exit 0;
+}
 
-# Verificamos la existencia de archivos duplicados
-opendir($destino, $destino) or (grabarSiCorresponde($comando, $origen, $destino, 2) and exit 2);
+# Verificamos la existencia de archivos duplicados:
+# - Abrimos el directorio.
+if (!opendir($destino, $destino)) {
+	grabarSiCorresponde($comando, $origen, $destino, 2);
+	exit 2;
+}
 
-# Buscamos si algún archivo posee el mismo nombre.
+# - Buscamos si algún archivo posee el mismo nombre.
 foreach(grep(/^($nombreArchivo)$/, readdir($destino)))
 {	
 	# Abrimos directorio "dup" o lo creamos en caso de no existir
