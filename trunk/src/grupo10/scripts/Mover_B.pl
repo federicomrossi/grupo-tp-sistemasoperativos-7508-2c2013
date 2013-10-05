@@ -43,27 +43,35 @@ require 'libs/lib_utilities.pl';
 # Almacenamos parámetros de entrada
 $origen = $ARGV[0];
 $destino = $ARGV[1];
+$comando;
+
+# Comprobamos si existe un tercer parametro con el nombre del comando invocante.
+# En el transcurso del programa, se utiliza para grabar en el log si el comando
+# invocante lo hace.
+if ($ARGV[2]) {
+	$comando = $ARGV[2];
+}
 
 # Directorio de archivos duplicados
 $dirDuplicados = $destino . "/dup/";
 
 
 # Verificamos si el origen existe
-open($origen, $origen) or exit 1;
+open($origen, $origen) or (grabarSiCorresponde($comando, 1) and exit 1);
 close $origen;
 
 # Verificamos si el directorio destino existe. De ser así, lo dejamos abierto.
-opendir($destino, $destino) or exit 2;
+opendir($destino, $destino) or (grabarSiCorresponde($comando, 2) and exit 2);
 # Cerramos el directorio
 closedir $destino;
 
 # Verificamos si el origen es igual al destino en cuyo caso ya se movió el
 # archivo
 ($pathOrigen, $nombreArchivo) = obtenerDir($origen);
-exit 0 if($pathOrigen eq $destino);
+(grabarSiCorresponde($comando, 0) and exit 0) if($pathOrigen eq $destino);
 
 # Verificamos la existencia de archivos duplicados
-opendir($destino, $destino) or exit 2;
+opendir($destino, $destino) or (grabarSiCorresponde($comando, 2) and exit 2);
 
 # Buscamos si algún archivo posee el mismo nombre.
 foreach(grep(/^($nombreArchivo)$/, readdir($destino)))
@@ -93,6 +101,9 @@ foreach(grep(/^($nombreArchivo)$/, readdir($destino)))
 }
 
 # Movemos el archivo
-move $origen, $destino;
+$error = move $origen, $destino;
+
+# Devolvemos el codigo de error
+grabarSiCorresponde($comando, $error);
 
 closedir $destino;
