@@ -56,7 +56,7 @@ sub grabarSiCorresponde
 	$destino = $_[2];
 	$resOperacion = $_[3];
 
-	@comandosDeLog = {"Recibir_B", "Reservar_B"};
+	@comandosDeLog = ("Recibir_B", "Reservar_B");
 	$tam = scalar @comandosDeLog;
 
 	for($i = 0; $i < $tam; $i++)
@@ -67,21 +67,21 @@ sub grabarSiCorresponde
 			if($resOperacion == 1)
 			{
 				# REEMPLAZAR
-				print "COMANDO: $comando, MENSAJE: Error al intentar mover. El directorio origen ($origen) no existe.";
+				print "COMANDO: $comando, MENSAJE: Error al intentar mover. El directorio origen ($origen) no existe.\n";
 				# END REEMPLAZAR
 				return;
 			}
 			elsif($resOperacion == 2)
 			{
 				# REEMPLAZAR
-				print "COMANDO: $comando, MENSAJE: Error al intentar mover. El directorio destino ($destino) no existe.";
+				print "COMANDO: $comando, MENSAJE: Error al intentar mover. El directorio destino ($destino) no existe.\n";
 				# END REEMPLAZAR
 				return;
 			}
 
 			# Caso de exito en el movimiento de mover
 			# REEMPLAZAR
-			print "COMANDO: $comando, MENSAJE: Se ha movido desde el origen $origen hacia el directorio destino $destino";
+			print "COMANDO: $comando, MENSAJE: Se ha movido desde el origen $origen hacia el directorio destino $destino\n";
 			# END REEMPLAZAR
 		}
 	}
@@ -170,7 +170,10 @@ foreach(grep(/^($nombreArchivo)$/, readdir($destino)))
 }
 
 # Movemos el archivo
-$error = move $origen, $destino;
+$error = 0;
+if (!move ($origen, $destino)) {
+	$error = 1;
+}
 
 # Devolvemos el codigo de error
 grabarSiCorresponde($comando, $origen, $destino, $error);
