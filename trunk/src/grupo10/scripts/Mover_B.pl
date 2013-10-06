@@ -6,7 +6,7 @@
 # Universidad de Buenos Aires
 # #############################################################################
 #
-# COMANDO MOVER_B
+# FUNCIÓN MOVER_B
 # 
 # Comando que se encarga de mover archivos desde un directorio origen hacia un
 # directorio destino. Si en el directorio destino ya se encuentra un archivo
