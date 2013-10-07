@@ -290,56 +290,56 @@ instalar () {
 	### crear directorios
 	log "I" "Creando estructura de directorios. . . ."
 	mkdir -p $BINDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de binarios"
 	fi
 	log "I" "$BINDIR"
 
 	mkdir -p $MAEDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de archivos maestros"
 	fi
 	log "I" "$MAEDIR"
 
 	mkdir -p $ARRIDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de arribo de archivos externos"
 	fi
 	log "I" "$ARRIDIR"
 
 	mkdir -p $RECHDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de archivos externos rechazados"
 	fi
 	log "I" "$RECHDIR"
 
 	mkdir -p $ACEPTDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de archivos externos aceptados"
 	fi
 	log "I" "$ACEPTDIR"
 
 	mkdir -p $REPODIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de reportes de salida"
 	fi
 	log "I" "$REPODIR"
 
 	mkdir -p $PROCDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de archivos procesados"
 	fi
 	log "I" "$PROCDIR"
 
 	mkdir -p $LOGDIR
-	if( $? != 0 )
+	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de logs"
 	fi
