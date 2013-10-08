@@ -34,63 +34,114 @@
 # [ INSERTAR EL GRABADO INICIAL SOBRE EL LOG ]
 
 
+##############################################################################################
+# Constantes
+readonly INVALIDO=1
+readonly VALIDO=0
+
+# Rechaza la reserva e imprime en el log el motivo de rechazo.
+# Recibe como parametro el motivo del rechazo
+function rechazarReserva() {
+	local motivo=$1
+	# echo "Reserva rechazada. Motivo: $1"
+}
+
 # Funcion que valida el campo fecha
+# Si la fecha es correcta, devuelve 0. De lo contrario, devuelve 1.
+# Recibe como parametros: 1- La fecha
 function validarFecha() {
-	local fecha=$1
-	local cod_error=0
-	# Compruebo si la fecha esta vacia, es decir, no cumple con formato dd/mm/aaaa
-	if [ -z "$fecha" ]; then
-		cod_error=1
-		echo "Error en los parametros ingresados en Reservar_B"
+	local fecha_a_validar=$1
+	local validez=""
+
+	# Compruebo si la fecha esta vacia
+	if [ -z "$fecha_a_validar" ]; then
+		rechazarReserva "Error en los parametros ingresados en Reservar_B"
+		return $INVALIDO
 	else
 		# Obtengo dia, mes y anio
-		dia=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\1:'`
-		mes=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\2:'`
-		anio=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\3:'`
+		dia=`echo $fecha_a_validar | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\1:'`
+		mes=`echo $fecha_a_validar | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\2:'`
+		anio=`echo $fecha_a_validar | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\3:'`
 
 		# Compruebo si corresponde a fecha de calendario:
 		# - Busca en el calendario la fecha, si es valida devuelve 0
-		validez=`date -d "$mes/$dia/$anio" &> /dev/null; echo $?`
+		validez=`date -d "$mes/$dia/$anio" > /dev/null 2>&1 ; echo $?`
+
 		# - Si devuelve 0, entonces es una fecha valida
+		# - Sino, devuelve un codigo de error 1
 		if [ "$validez" == "0" ]; then
-			echo "$fecha -> Dia: $dia Mes: $mes Anio: $anio"
+			return $VALIDO
 		else
-			# Sino, devuelve un codigo de error 1
-			cod_error=1
+			rechazarReserva "Se ingreso una fecha invalida"
+			return $INVALIDO
 		fi
 	fi
-	# Devuelve el estado
-	return $cod_error
 }
 
+# Funcion que verifica que la fecha de la reserva caiga entre los 30 dias y los 2 dias de anticipacion.
+# De ser una reserva con mucha anticipacion o muy poca, se rechaza.
+# Recibe como parametros: 1- La fecha en formato dd/mm/aaaa
 function verificarAnticipacion() {
 	local fecha_funcion=$1
+	local distancia_dias=0
 	local hoy=`date +%D`
 
-	# Invierto la fecha para obtener el formato mm/dd/aaaa
-	fecha_funcion=`echo "${fecha_funcion}" | sed 's:\([^/]\+\)/\([^/]\+\)/\([^/]\+\):\2/\1/\3:'`
-
-	# Obtengo distancia entre fechas en funcion de 'dias'
-	distancia_dias=$(( ((`date --date="$fecha_funcion" +%s`) - (`date --date="$hoy" +%s`)) / (60*60*24) ))
-
-	# Si la reserva es para el dia actual o para el dia siguiente, la rechazo
-	if [ "$distancia_dias" -lt "2" ]; then
-		if [ "$distancia_dias" -ge "0" ]; then
-			echo "Termino la entrega querido, mas rapido la proxima vez"
-		# Si es para una fecha vencida, la rechazo
-		elif [ "$distancia_dias" -lt "0" ]; then
-			echo "La fecha de la funcion esta mas vencida que mi dulce de leche"
-		fi
+	if [ -z "$fecha_funcion" ]; then
+		rechazarReserva "Fecha invalida"
 	else
-		# Si la reserva tiene mas de 30 dias de anticipacion, la rechazo
-		if [ "$distancia_dias" -gt "30" ]; then
-			echo "Tas apurado que pedis con tanta anticipacion?"
+
+		# Invierto la fecha para obtener el formato mm/dd/aaaa
+		fecha_funcion=`echo "${fecha_funcion}" | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\2/\1/\3:'`
+
+		# Obtengo distancia entre fechas en funcion de 'dias'
+		distancia_dias=$(( ( (`date --date="$fecha_funcion" +%s`) - (`date --date="$hoy" +%s`) ) / (60*60*24) ))
+
+		# Si la reserva es para el dia actual o para el dia siguiente, la rechazo
+		# Si ('dias' < 2), 
+		if [ "$distancia_dias" -lt "2" ]; then
+
+			# Si ('dias' >= 0) -> Rechazar
+			if [ "$distancia_dias" -ge "0" ]; then
+				rechazarReserva "Termino la entrega querido, mas rapido la proxima vez"
+				# Se devuelve el estado 1
+				return $INVALIDO
+
+			# Si es para una fecha vencida, la rechazo
+			elif [ "$distancia_dias" -lt "0" ]; then
+				rechazarReserva "La fecha de la funcion esta mas vencida que mi dulce de leche"
+				# Se devuelve el estado 1
+				return $INVALIDO
+
+			fi
 		else
-			# Es para una fecha valida
-			echo "U r good 2 go!!!!!"
+			# Si la reserva tiene mas de 30 dias de anticipacion, la rechazo
+			# ('dias' > 30)
+			if [ "$distancia_dias" -gt "30" ]; then
+				rechazarReserva "Tas apurado que pedis con tanta anticipacion?"
+				# Se devuelve el estado 1
+				return $INVALIDO
+			else
+				# Se devuelve el estado 1
+				return $VALIDO
+				echo "U r good 2 go!!!!!"
+			fi
 		fi
 	fi
 }
+
+# Funcion que verifica que la hora sea valida
+# Recibe como parametro la hora, si no está en formato hh:mm -> se rechaza
+function validarHora() {
+	local validez_hora=`date --date="$1" &> /dev/null; echo $?`
+	if [ "$validez_hora" == "0" ]; then
+		return $VALIDO
+	else
+		rechazarReserva "Hora de la función invalida"
+		return $INVALIDO
+	fi
+}
+
+
 
 
 # DEBUG: Se debe cambiar el path ingresado por la variable de entorno:
@@ -108,6 +159,14 @@ function verificarAnticipacion() {
 
 # DEBUG: Por ahora el path de la carpeta arribos se define 
 ACEPDIR="./aceptados/"
+# Variables
+cant_archivos=0
+nombre_archivo=""
+cant_lineas_arch=0
+linea=""
+fecha=""
+ret_val=0
+
 # Busca la cantidad de archivos contenidos en el directorio
 cant_archivos=`ls -p $ACEPDIR | wc -l`
 # Para cada archivo...
@@ -128,11 +187,22 @@ for j in `seq 1 ${cant_archivos}`; do
 		fecha=`echo ${linea} | cut -d ';' -f "2"`
 
 		# Se valida la fecha
-		fecha_valida=`validarFecha $fecha`
+		ret_val=`validarFecha $fecha; echo $?`
 
-		if [ -n "$fecha_valida" ]; then
+		if [ "$ret_val" == "0" ]; then
+
 			# Se comprueba si se trata de una fecha vencida o muy anticipada
-			verificarAnticipacion $fecha
+			ret_val=`verificarAnticipacion $fecha; echo $?`
+
+			if [ "$ret_val" == "0" ]; then
+				# Obtengo la hora, que es el campo 3
+				hora=`echo ${linea} | cut -d ';' -f "3"`
+
+				# Se comprueba que la hora de la funcion sea correcta
+				ret_val=`validarHora $hora; echo $?`
+
+				echo "La hora $hora tiene validez: $ret_val"
+			fi
 		fi
 
 	done
