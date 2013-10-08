@@ -43,31 +43,24 @@ function validarFecha() {
 		cod_error=1
 		echo "Error en los parametros ingresados en Reservar_B"
 	else
-		# Compruebo si formato numerico dd/mm/aaaa
-		fecha=`echo $fecha | grep -x '[0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\}'`
+		# Obtengo dia, mes y anio
+		dia=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\1:'`
+		mes=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\2:'`
+		anio=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\3:'`
 
-		# Si no tiene ese formato, sale con cod_error = 1
-		if [ -z "$fecha" ]; then
-			cod_error=1
+		# Compruebo si corresponde a fecha de calendario:
+		# - Busca en el calendario la fecha, si es valida devuelve 0
+		validez=`date -d "$mes/$dia/$anio" &> /dev/null; echo $?`
+		# - Si devuelve 0, entonces es una fecha valida
+		if [ "$validez" == "0" ]; then
+			echo "$fecha -> Dia: $dia Mes: $mes Anio: $anio"
 		else
-			# Obtiene dia, mes y anio
-			dia=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([^/]\+\)/\([^/]\+\):\1:'`
-			mes=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\2:'`
-			anio=`echo $fecha | sed 's:\([0-9]\{2\}\)/\([0-9]\{2\}\)/\([0-9]\{4\}\):\3:'`
-
-
-			# Comprueba si corresponde a fecha de calendario:
-			# - Busca en el calendario la fecha, si es valida devuelve 0
-			validez=`date -d "$mes/$dia/$anio" &> /dev/null; echo $?`
-			# - Si devuelve 0, entonces es una fecha valida
-			if [ "$validez" == "0" ]; then
-				echo "$fecha -> Dia: $dia Mes: $mes Anio: $anio"
-			else
-				# Sino, devuelve un codigo de error 1
-				cod_error=1
-			fi
+			# Sino, devuelve un codigo de error 1
+			cod_error=1
 		fi
 	fi
+	# Devuelve el estado
+	return $cod_error
 }
 
 function verificarAnticipacion() {
@@ -79,7 +72,7 @@ function verificarAnticipacion() {
 
 	# Obtengo distancia entre fechas en funcion de 'dias'
 	distancia_dias=$(( ((`date --date="$fecha_funcion" +%s`) - (`date --date="$hoy" +%s`)) / (60*60*24) ))
-	
+
 	# Si la reserva es para el dia actual o para el dia siguiente, la rechazo
 	if [ "$distancia_dias" -lt "2" ]; then
 		if [ "$distancia_dias" -ge "0" ]; then
