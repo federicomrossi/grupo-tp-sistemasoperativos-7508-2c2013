@@ -39,7 +39,128 @@
 readonly INVALIDO=1
 readonly VALIDO=0
 
+# Funcion que valida que el archivo en cuestion no haya sido procesado antes
+# Recibe como parametro el nombre del archivo.
+# Devueve 0 si no fue procesado, y 1 en caso contrario
+function validarDuplicados() {
+	return 0
+}
+
+# Funcion que valida si el archivo esta vacio
+# Recibe como parametros el nombre del archivo
+# Devuelve 0 si no esta vacio, y 1 en caso contrario
+function validarTamanio() {
+	return 0
+}
+
+# Funcion que valida el archivo, es decir: comprueba si esta vacio o si fue ya procesado. 
+# Si es valido, devuelve un codigo de 0, sino devuelve 1.
+# Recibe como parametro el nombre del archivo
+function archivoValido() {
+	local ret_val_AV=0
+	# Verifico si el archivo esta duplicado, es decir, ya ha sido procesado
+	ret_val_AV=`validarDuplicados $1; echo $?`
+
+	# Si no fue procesado,
+	if [ "$ret_val_AV" == "0" ]; then
+		# Se analiza si esta vacio
+		ret_val_AV=`validarTamanio $1; echo $?`
+
+		# Si no esta vacio, devuelve 0
+		if [ "$ret_val_AV" == "0" ]; then
+			return 0
+		else
+			# Si esta vacio, devuelve 1
+			return 1
+		fi
+
+	else
+		# Si ya fue procesado, devuelve 1
+		return 1
+	fi
+}
+
+# Funcion que procesa linea por linea el archivo que recibe como parametros.
+# Una vez procesado, traslada el archivo hacia el directorio $PROCDIR
+# Recibe como parametro el nombre del archivo
+function procesarArchivo() {
+	# Variables
+	local linea=""
+	local ret_val_PA=0
+	local cant_lineas_arch=0
+	local fecha=""
+	local hora=""
+
+	# Obtiene la cantidad de registros en el archivo (1 reg por linea)
+	cant_lineas_arch=`wc -l < $ACEPDIR${1}`
+
+	# Se obtiene el ID que aparece al comienzo en el nombre del archivo.
+	# El separador de campos es el '-'
+	id=`echo $1 | cut -d '-' -f "1"`
+
+	# Para cada registro...
+	for i in `seq 1 ${cant_lineas_arch}`; do
+		linea=`head -n $i $ACEPDIR${1} | tail -n 1`
+
+	#	grep '^[0-9]*;\([0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\}\);[0-9]\{2\}:[0-9]\{2\};[a-zA-Z]*;[a-zA-Z]*;[0-9]\+;[a-zA-Z]*' Docu
+
+		# Levanto el campo 2, que es el de la fecha
+		fecha=`echo ${linea} | cut -d ';' -f "2"`
+
+		# Se valida la fecha
+		ret_val_PA=`validarFecha $fecha; echo $?`
+
+		# Si no es valida, se procesa otra linea del archivo
+		if [ "$ret_val_PA" != "0" ]; then
+			continue
+		fi
+
+		# Se comprueba si se trata de una fecha vencida o muy anticipada
+		ret_val_PA=`verificarAnticipacion $fecha; echo $?`
+
+		# Si la reserva es muy anticipada o es poco anticipada, se lee la siguiente linea
+		if [ "$ret_val_PA" != "0" ]; then
+			continue
+		fi
+
+		# Obtengo la hora, que es el campo 3
+		hora=`echo ${linea} | cut -d ';' -f "3"`
+
+		# Se comprueba que la hora de la funcion sea correcta
+		ret_val_PA=`validarHora $hora; echo $?`
+
+		echo "La hora $hora tiene validez: $ret_val_PA"
+
+		# Si la hora no es valida, se lee la siguiente linea
+		if [ "$ret_val_PA" != "0" ]; then
+			continue
+		fi
+
+		# Se comprueba que se trate de un evento existente
+		# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
+		# if [ $(( id % 2 )) == "0" ]; then
+		# 	echo "Es un ID Sala"
+		# 	ret_val_PA=`grep "[0-9]\+;[0-9]\+;$fecha;$hora;$id;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"; echo $?`
+		# 	echo "Me devolvio: $ret_val_PA buscando fecha $fecha"
+		# else
+		# 	echo "Es un ID Obra"
+		# 	ret_val_PA=`grep "[0-9]\+;$id;$fecha;$hora;[0-9]\+;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"; echo $?`
+		# 	echo "Me devolvio: $ret_val_PA buscando fecha $fecha"
+		# fi
+
+	done
+
+}
+
+# Funcion que guarda un mensaje en el log de archivo invalido y además
+# traslada el archivo hacia el directorio $RECHDIR
+# Recibe como parametro el nombre del archivo
+function rechazarArchivo() {
+	return 0
+}
+
 # Rechaza la reserva e imprime en el log el motivo de rechazo.
+# Esta funcion graba un registro en el archivo 'reservas.nok'
 # Recibe como parametro el motivo del rechazo
 function rechazarReserva() {
 	local motivo=$1
@@ -159,53 +280,38 @@ function validarHora() {
 
 # DEBUG: Por ahora el path de la carpeta arribos se define 
 ACEPDIR="./aceptados/"
+PROCDIR="./procesados/"
 # Variables
-cant_archivos=0
-nombre_archivo=""
-cant_lineas_arch=0
-linea=""
-fecha=""
+cant_elemetos=0
 ret_val=0
 
-# Busca la cantidad de archivos contenidos en el directorio
-cant_archivos=`ls -p $ACEPDIR | wc -l`
-# Para cada archivo...
-for j in `seq 1 ${cant_archivos}`; do
-	# Obtengo el nombre de un archivo
+# Busca la cantidad de elementos contenidos en el directorio
+cant_elemetos=`ls -p $ACEPDIR | wc -l`
+# Para cada elemento...
+for j in `seq 1 ${cant_elemetos}`; do
+	# Obtengo el nombre de un elemento
 	nombre_archivo=`ls -1p $ACEPDIR | head -n 1`
-	
-	# Obtiene la cantidad de registros en el archivo (1 reg por linea)
-	cant_lineas_arch=`wc -l < $ACEPDIR${nombre_archivo}`
 
-	# Para cada registro...
-	for i in `seq 1 ${cant_lineas_arch}`; do
-		linea=`head -n $i $ACEPDIR${nombre_archivo} | tail -n 1`
+	# Si se trata de un archivo
+	if [ -f $ACEPDIR$nombre_archivo ]; then
+		# Se analiza si es valido
+		ret_val=`archivoValido $nombre_archivo; echo $?`
 
-	#	grep '^[0-9]*;\([0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\}\);[0-9]\{2\}:[0-9]\{2\};[a-zA-Z]*;[a-zA-Z]*;[0-9]\+;[a-zA-Z]*' Docu
-
-		# Levanto el campo 2, que es el de la fecha
-		fecha=`echo ${linea} | cut -d ';' -f "2"`
-
-		# Se valida la fecha
-		ret_val=`validarFecha $fecha; echo $?`
-
+		# Si es valido, entonces se procesa
 		if [ "$ret_val" == "0" ]; then
-
-			# Se comprueba si se trata de una fecha vencida o muy anticipada
-			ret_val=`verificarAnticipacion $fecha; echo $?`
-
-			if [ "$ret_val" == "0" ]; then
-				# Obtengo la hora, que es el campo 3
-				hora=`echo ${linea} | cut -d ';' -f "3"`
-
-				# Se comprueba que la hora de la funcion sea correcta
-				ret_val=`validarHora $hora; echo $?`
-
-				echo "La hora $hora tiene validez: $ret_val"
-			fi
+			echo "Proceso archivo $nombre_archivo"
+			procesarArchivo $nombre_archivo
+		else
+			echo "Descarto archivo $nombre_archivo"
+			# Si no es un archivo valido, se mueve a RECHDIR
+			rechazarArchivo $nombre_archivo
 		fi
-
-	done
+	elif [ -d $ACEPDIR$nombre_archivo ]; then
+		echo "Se trata de un dir"
+	else
+		echo "Algo anda mal"
+	fi
+	
 done
 
 # FILES=../*
