@@ -68,15 +68,15 @@ function archivoValido() {
 
 		# Si no esta vacio, devuelve 0
 		if [ "$ret_val_AV" == "0" ]; then
-			return 0
+			return $VALIDO
 		else
 			# Si esta vacio, devuelve 1
-			return 1
+			return $INVALIDO
 		fi
 
 	else
 		# Si ya fue procesado, devuelve 1
-		return 1
+		return $INVALIDO
 	fi
 }
 
@@ -90,6 +90,9 @@ function procesarArchivo() {
 	local cant_lineas_arch=0
 	local fecha=""
 	local hora=""
+	local id=""
+	local id_combo=0
+	local cant_butacas=0
 
 	# Obtiene la cantidad de registros en el archivo (1 reg por linea)
 	cant_lineas_arch=`wc -l < $ACEPDIR${1}`
@@ -129,24 +132,33 @@ function procesarArchivo() {
 		# Se comprueba que la hora de la funcion sea correcta
 		ret_val_PA=`validarHora $hora; echo $?`
 
-		echo "La hora $hora tiene validez: $ret_val_PA"
+		# echo "La hora $hora tiene validez: $ret_val_PA"
 
 		# Si la hora no es valida, se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
 			continue
 		fi
 
-		# Se comprueba que se trate de un evento existente
-		# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
-		# if [ $(( id % 2 )) == "0" ]; then
-		# 	echo "Es un ID Sala"
-		# 	ret_val_PA=`grep "[0-9]\+;[0-9]\+;$fecha;$hora;$id;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"; echo $?`
-		# 	echo "Me devolvio: $ret_val_PA buscando fecha $fecha"
-		# else
-		# 	echo "Es un ID Obra"
-		# 	ret_val_PA=`grep "[0-9]\+;$id;$fecha;$hora;[0-9]\+;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"; echo $?`
-		# 	echo "Me devolvio: $ret_val_PA buscando fecha $fecha"
-		# fi
+		# Se comprueba que se trate de un evento existente y ademas, se recibe
+		# el ID Combo correspondiente
+		id_combo=`validarEvento $id $fecha $hora`
+
+		# echo "El evento tiene id Combo: $id_combo"
+
+		# Si no existe el evento seleccionado, se lee el siguiente registro
+		if [ "$id_combo" == "null" ]; then
+			continue
+		fi
+
+		# Obtengo la cantidad de butacas requeridas, que es el campo 6
+		cant_butacas=`echo $linea | cut -d ';' -f "6"`
+
+		# Se comprueba que haya disponibilidad en tal evento
+		###### NOTA IMP: Lo siguiente sirve solo para BASH 4 en adelante ##########
+		ret_val_PA=`comprobarDisponibilidad $id_combo $cant_butacas; echo $?`
+
+		echo "Estado de disponibilidad: $ret_val_PA"
+
 
 	done
 
@@ -223,13 +235,13 @@ function verificarAnticipacion() {
 
 			# Si ('dias' >= 0) -> Rechazar
 			if [ "$distancia_dias" -ge "0" ]; then
-				rechazarReserva "Termino la entrega querido, mas rapido la proxima vez"
+				rechazarReserva "Reserva realizada con menos de 2 dias de anticipacion"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
 			# Si es para una fecha vencida, la rechazo
 			elif [ "$distancia_dias" -lt "0" ]; then
-				rechazarReserva "La fecha de la funcion esta mas vencida que mi dulce de leche"
+				rechazarReserva "La fecha ingresada no corresponde con un evento vigente"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
@@ -238,13 +250,12 @@ function verificarAnticipacion() {
 			# Si la reserva tiene mas de 30 dias de anticipacion, la rechazo
 			# ('dias' > 30)
 			if [ "$distancia_dias" -gt "30" ]; then
-				rechazarReserva "Tas apurado que pedis con tanta anticipacion?"
+				rechazarReserva "Reserva realizada con mas de 30 dias de anticipacion"
 				# Se devuelve el estado 1
 				return $INVALIDO
 			else
 				# Se devuelve el estado 1
 				return $VALIDO
-				echo "U r good 2 go!!!!!"
 			fi
 		fi
 	fi
@@ -262,7 +273,82 @@ function validarHora() {
 	fi
 }
 
+# Funcion que valida si el evento pedido existe. Es decir, comprueba
+# si existe un evento con el respectivo ID, Fecha y Hora. En vaso de existir, devuelve
+# el numero de combo correspondiente al evento. Sino, devuelve 'null' indicando la no existencia
+# del evento seleccionado
+# Recibe como parametros: 1- ID, 2- Fecha, 3- Hora.
+function validarEvento() {
+	local id_evento=$1
+	local fecha_evento=$2
+	local hora_evento=$3
+	local id_combo_evento=0
 
+	# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
+	if [ $(( $id_evento % 2 )) == "0" ]; then
+		# Es un ID Sala
+		id_combo_evento=`grep "C\?[0-9]\+;[0-9]\+;$fecha_evento;$hora_evento;$id_evento;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
+	else
+		# Es un ID Obra
+		id_combo_evento=`grep "C\?[0-9]\+;$id_evento;$fecha_evento;$hora_evento;[0-9]\+;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
+	fi
+
+	# Si el evento no es valido, se rechaza la reserva
+	if [ "$?" != "0" ]; then
+		rechazarReserva "Los datos ingresados no corresponden a un evento existente"
+		echo "null"
+	else
+		# Sino, se devuelve 0 y se guarda en el ultimo parametro el valor de id_combo de este evento
+		id_combo_evento=`echo $id_combo_evento | sed "s:\(C\?[0-9]\+\);.\+:\1:"`
+		echo "$id_combo_evento"
+	fi
+}
+
+# Funcion que comprueba si para cierto evento existente, hay disponibilidad o no.
+# Devuelve 0 si hay lugar, o 1 en caso contrario.
+# Recibe como parametros: 1- ID Combo, 2- Cantidad butacas requeridas
+function comprobarDisponibilidad() {
+	local estado=0
+
+	# Si existe un registro en la tabla de disponibilidades, entonce uso ese valor
+	if [ -n "${disponibilidades["$1"]}" ]; then
+		# Si hay mas o igual cantidad de butacas disponibles, entonces acepto
+		if [ "${!disponibilidades["$1"]}" -ge "$2" ]; then
+			echo "Miro tabla y habian ${!disponibilidades["$1"]} butacas"
+			disponibilidades=( ["$1"]=$(( ${!disponibilidades["$1"]} - $2 )) )
+			export disponibilidades
+			echo "Miro Tabla. Hay lugar y quedan ${!disponibilidades["$1"]} butacas"
+			return $VALIDO
+		else
+			echo "Miro Tabla. No hay lugar"
+			return $INVALIDO
+		fi
+	else
+		# Sino, se levanta del arcihvo la disponibilidad correspondiente
+		butacas_disponibles=`grep "^C\?[0-9]\+;.\+" "$PROCDIR/combos.dis"`
+		butacas_disponibles=`echo $butacas_disponibles | sed "s:C\?[0-9]\+;\([^;]\+;\)\{5\}\([0-9]\+\);[^;]\+:\2:"`
+
+		# Se chequea si hay espacio suficiente
+		if [ "$butacas_disponibles" -ge "$2" ]; then
+			butacas_disponibles=$(( $butacas_disponibles - $2 ))
+			echo "Habia lugar en archivo y quedan $butacas_disponibles porque pidieron $2"
+			estado=$VALIDO
+		else
+			estado=$INVALIDO
+		fi
+
+		# Se agrega en la tabla
+		disponibilidades=( ["$1"]="$butacas_disponibles" )
+
+		export disponibilidades
+
+
+		echo "Miro archivo. Hay ${disponibilidades["$1"]} butacas disponibles"
+		
+		# Se devuelve el estado
+		return $estado
+	fi
+}
 
 
 # DEBUG: Se debe cambiar el path ingresado por la variable de entorno:
@@ -284,6 +370,8 @@ PROCDIR="./procesados/"
 # Variables
 cant_elemetos=0
 ret_val=0
+# Tabla que contiene las disponibilidades de los eventos
+declare -A disponibilidades
 
 # Busca la cantidad de elementos contenidos en el directorio
 cant_elemetos=`ls -p $ACEPDIR | wc -l`
