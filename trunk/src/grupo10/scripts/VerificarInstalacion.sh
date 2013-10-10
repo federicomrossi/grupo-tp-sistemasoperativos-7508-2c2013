@@ -13,13 +13,10 @@
 # comando 'BIN' -> chequea el directorio BINDIR en busca de los archivos binarios
 # comando 'LOG' -> chequea que el directorio LOGDIR exista
 # comando 'ARR' -> chequea que el directorio ARRIDIR exista
+# comando 'ACEP' -> chequea que el directorio ACEPDIR exista
 # comando 'REC' -> chequea que el directorio RECHDIR exista
 # comando 'REP' -> chequea que el directorio REPODIR exista
-# comando 'PARQ'-> chequea que el directorio $GRUPO10/parque_instalado exista
-# comando 'RECIBIDAS'-> chequea que el directorio $GRUPO10/inst_recibidas exista
-# comando 'RECHAZADAS'-> chequea que el directorio $GRUPO10/inst_rechazadas exista
-# comando 'PROCESADAS'-> chequea que el directorio $GRUPO10/inst_procesadas exista
-# comando 'ORDENADAS'-> chequea que el directorio $GRUPO10/inst_ordenadas exista
+# comando 'PROC'-> chequea que el directorio PROCDIR exista
 # comando 'COM' -> chequea todos los anteriores. Se utliza para ver si la instalacion está completa
 #
 # Valor de codigo_err: 0 si el estado es correcto
@@ -46,7 +43,7 @@ MAE (){
 			then 
 				codigo_err=2
 			else
-				if [ ! -f "$dir/prod.mae" -o ! -f "$dir/sucu.mae" -o ! -f "$dir/cli.mae" ]
+				if [ ! -f "$dir/salas.mae" -o ! -f "$dir/obras.mae" ]
 				then
 					codigo_err=1
 				fi
@@ -73,7 +70,7 @@ BIN (){
 			then 
 				codigo_err=2
 			else
-				if [ ! -f "$dir/IniciarU.sh" -o ! -f "$dir/DetectarU.sh" -o ! -f "$dir/GrabarParqueU.sh" -o ! -f "$dir/ListarU.pl" -o ! -f "$dir/MirarU.pl" -o ! -f "$dir/StopD.sh" -o ! -f "$dir/StartD.sh" -o ! -f "$dir/functions.pm" ]
+				if [ ! -f "$dir/Iniciar_B.sh" -o ! -f "$dir/Recibir_B.sh" -o ! -f "$dir/Reservar_B.sh" -o ! -f "$dir/Mover_B.pl" -o ! -f "$dir/Start_D.sh" -o ! -f "$dir/Stop_D.sh" -o ! -f "$dir/functions.pm" ]
 				then
 					codigo_err=1
 				fi
@@ -129,9 +126,31 @@ ARR (){
 	return $codigo_err
 }
 
+ACEP (){
+	#Verificar existencia de directorio de arribos
+	#echo "Verificando ACEPDIR"
+	codigo_err=0
+	dir=""
+	dir=`grep "ACEPDIR" <$1 | cut -d "=" -f 2`
+
+	#while IFS== read -r var valor usuario fecha
+	#do
+	#	if [ "$var" == "ACEPDIR" ]
+	#	then
+			if [ ! -d "$dir" ]
+			then 
+				codigo_err=2
+			fi
+	#	fi
+
+	#done <$1
+
+	return $codigo_err
+}
+
 REC (){
 	#Verificar existencia de directorio de rechazos
-	#echo "Verificando RECDIR"
+	#echo "Verificando RECHDIR"
 	codigo_err=0
 	dir=""
 	dir=`grep "RECHDIR" <$1 | cut -d "=" -f 2`
@@ -153,7 +172,7 @@ REC (){
 
 REP (){
 	#Verificar existencia de directorio de rechazos
-	#echo "Verificando REPDIR"
+	#echo "Verificando REPODIR"
 	codigo_err=0
 	dir=""
 	dir=`grep "REPODIR" <$1 | cut -d "=" -f 2`
@@ -174,70 +193,30 @@ REP (){
 	return $codigo_err
 }
 
-PARQ () {
+PROC (){
+	#Verificar existencia de directorio de rechazos
+	#echo "Verificando PROCDIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "GRUPO" <$1 | cut -d "=" -f 2`
+	dir=`grep "PROCDIR" <$1 | cut -d "=" -f 2`
 	
-	if [ ! -d "$dir/parque_instalado" ]
-	then 
-		codigo_err=2
-	fi
+	
+	#while IFS== read -r var valor usuario fecha
+	#do
+	#	if [ "$var" == "PROCDIR" ]
+	#	then
+			if [ ! -d "$dir" ]
+			then 
+				codigo_err=2
+			fi
+	#	fi
+
+	#done <$1
 	
 	return $codigo_err
 }
 
-RECIBIDAS () {
-	codigo_err=0
-	dir=""
-	dir=`grep "GRUPO" <$1 | cut -d "=" -f 2`
-	
-	if [ ! -d "$dir/inst_recibidas" ]
-	then 
-		codigo_err=2
-	fi
-	
-	return $codigo_err
-}
 
-ORDENADAS () {
-	codigo_err=0
-	dir=""
-	dir=`grep "GRUPO" <$1 | cut -d "=" -f 2`
-	
-	if [ ! -d "$dir/inst_ordenadas" ]
-	then 
-		codigo_err=2
-	fi
-	
-	return $codigo_err
-}
-
-PROCESADAS () {
-	codigo_err=0
-	dir=""
-	dir=`grep "GRUPO" <$1 | cut -d "=" -f 2`
-	
-	if [ ! -d "$dir/inst_procesadas" ]
-	then 
-		codigo_err=2
-	fi
-	
-	return $codigo_err
-}
-
-RECHAZADAS () {
-	codigo_err=0
-	dir=""
-	dir=`grep "GRUPO" <$1 | cut -d "=" -f 2`
-	
-	if [ ! -d "$dir/inst_rechazadas" ]
-	then 
-		codigo_err=2
-	fi
-	
-	return $codigo_err
-}
 
 COM () {
 	#echo "COM: Verificando instalacion. Archivo conf es $1"
@@ -247,20 +226,13 @@ COM () {
 	BIN $1 ; ec_BIN=$?
 	LOG $1 ; ec_LOG=$?
 	ARR $1 ; ec_ARR=$?
+	ACEP $1 ; ec_ACEP=$?
 	REC $1 ; ec_REC=$?
 	REP $1 ; ec_REP=$?
-	PARQ $1 ; ec_PARQ=$?
-	RECIBIDAS $1 ; ec_RECI=$?
-	RECHAZADAS $1 ; ec_RECH=$?
-	ORDENADAS $1 ; ec_ORD=$?
-	PROCESADAS $1 ; ec_PROC=$?
+	PROC $1 ; ec_PROC=$?
 	
 	#Separo el condicional solo por claridad
-	if [ $ec_MAE -gt 0 -o $ec_BIN -gt 0 -o $ec_LOG -gt 0 -o $ec_ARR -gt 0 -o $ec_REC -gt 0 ]
-	then codigo_err=1
-	fi
-	
-	if [ $ec_REP -gt 0 -o $ec_PARQ -gt 0 -o $ec_RECI -gt 0 -o $ec_RECH -gt 0 -o $ec_ORD -gt 0 -o $ec_PROC -gt 0 ]
+	if [ $ec_MAE -gt 0 -o $ec_BIN -gt 0 -o $ec_LOG -gt 0 -o $ec_ARR -gt 0 -o $ec_REC -gt 0 -o $ec_ACEP -gt 0 -o $ec_REP -gt 0 -o $ec_PROC -gt 0 ]
 	then codigo_err=1
 	fi
 	
