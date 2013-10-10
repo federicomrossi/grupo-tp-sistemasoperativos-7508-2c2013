@@ -38,6 +38,15 @@
 # Constantes
 readonly INVALIDO=1
 readonly VALIDO=0
+readonly LOG_PATH="./log/Reservar_B.log"
+
+# Funcion que escribe en el log
+# Recibe como parametros: 1- Tipo de mensaje, 2- Mensaje
+function log (){
+    # perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Reservar_B', '$1', '$2', '$LOG_PATH')"
+    return 0
+}
+
 
 # Funcion que valida que el archivo en cuestion no haya sido procesado antes
 # Recibe como parametro el nombre del archivo.
@@ -87,12 +96,17 @@ function procesarArchivo() {
 	# Variables
 	local linea=""
 	local ret_val_PA=0
+	local motivo
 	local cant_lineas_arch=0
 	local fecha=""
 	local hora=""
 	local id=""
 	local id_combo=0
+	local combo=""
 	local cant_butacas=0
+	local cant_reservas_ok=0
+	local cant_reservas_nok=0
+	
 
 	# Obtiene la cantidad de registros en el archivo (1 reg por linea)
 	cant_lineas_arch=`wc -l < $ACEPDIR${1}`
@@ -111,18 +125,24 @@ function procesarArchivo() {
 		fecha=`echo ${linea} | cut -d ';' -f "2"`
 
 		# Se valida la fecha
-		ret_val_PA=`validarFecha $fecha; echo $?`
+		motivo=`validarFecha $fecha`
+		ret_val_PA=`echo $?`
 
-		# Si no es valida, se procesa otra linea del archivo
+		# Si no es valida, se rechaza la reserva y se procesa otra linea del archivo
 		if [ "$ret_val_PA" != "0" ]; then
+			rechazarReserva "$linea" "$motivo" "$1"
+			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
 
 		# Se comprueba si se trata de una fecha vencida o muy anticipada
-		ret_val_PA=`verificarAnticipacion $fecha; echo $?`
+		motivo=`verificarAnticipacion $fecha`
+		ret_val_PA=`echo $?`
 
-		# Si la reserva es muy anticipada o es poco anticipada, se lee la siguiente linea
+		# Si la reserva tiene mas de 30 dias de anticipacion o menos de 2, se rechaza la reserva y se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
+			rechazarReserva "$linea" "$motivo" "$1"
+			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
 
@@ -130,35 +150,76 @@ function procesarArchivo() {
 		hora=`echo ${linea} | cut -d ';' -f "3"`
 
 		# Se comprueba que la hora de la funcion sea correcta
-		ret_val_PA=`validarHora $hora; echo $?`
-
-		# echo "La hora $hora tiene validez: $ret_val_PA"
+		motivo=`validarHora $hora`
+		ret_val_PA=`echo $?`
 
 		# Si la hora no es valida, se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
+			rechazarReserva "$linea" "$motivo" "$1"
+			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
 
 		# Se comprueba que se trate de un evento existente y ademas, se recibe
-		# el ID Combo correspondiente
-		id_combo=`validarEvento $id $fecha $hora`
-
-		# echo "El evento tiene id Combo: $id_combo"
+		# el combo correspondiente
+		combo=`validarEvento $id $fecha $hora`
 
 		# Si no existe el evento seleccionado, se lee el siguiente registro
-		if [ "$id_combo" == "null" ]; then
+		if [ "$combo" == "null" ]; then
+			motivo="El evento seleccionado no existe"
+			rechazarReserva "$linea" "$motivo" "$1"
+			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
+
+		# Se obtuvo el combo, entonces se parsea el ID Combo y se guarda
+		id_combo=`echo $combo | sed "s:C\?\([0-9]\+\);.\+:\1:"`
 
 		# Obtengo la cantidad de butacas requeridas, que es el campo 6
 		cant_butacas=`echo $linea | cut -d ';' -f "6"`
 
 		# Se comprueba que haya disponibilidad en tal evento
-		###### NOTA IMP: Lo siguiente sirve solo para BASH 4 en adelante ##########
-		ret_val_PA=`comprobarDisponibilidad $id_combo $cant_butacas; echo $?`
+		####### NOTA IMP: Lo siguiente sirve solo para BASH 4 en adelante ##########
 
-		echo "Estado de disponibilidad: $ret_val_PA"
+		# Si existe un registro en la tabla de disponibilidades, entonces uso ese valor
+		if [ -n "${disponibilidades["$id_combo"]}" ]; then
 
+			# Si hay mas o igual cantidad de butacas disponibles, entonces acepto
+			if [ "${disponibilidades["$id_combo"]}" -ge "$cant_butacas" ]; then
+				disponibilidades=( ["$id_combo"]=$(( ${disponibilidades["$id_combo"]} - $cant_butacas )) )
+			else
+				# Si no hay lugar, se rechaza la reserva
+				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
+				rechazarReserva "$linea" "$motivo" "$1"
+				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
+				continue
+			fi
+		else
+			# Si no existe un registro en la tabla, se levanta del archivo la disponibilidad correspondiente
+			butacas_disponibles=`grep "C\?$id_combo\(;[^;]\+\)\{7\}" "$PROCDIR/combos.dis"`
+			butacas_disponibles=`echo $butacas_disponibles | sed "s:C\?[0-9]\+;\([^;]\+;\)\{5\}\([0-9]\+\);[^;]\+:\2:"`
+
+			# Se chequea si hay butacas suficientes
+			if [ "$butacas_disponibles" -ge "$cant_butacas" ]; then
+				# Si hay, se acepta la reserva
+				butacas_disponibles=$(( $butacas_disponibles - $cant_butacas ))
+			else
+				# Si no hay butacas suficientes, se rechaza la reserva
+				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
+				rechazarReserva "$linea" "$motivo" "$1"
+				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
+				continue
+			fi
+
+			# Se agrega en la tabla
+			disponibilidades+=( ["$id_combo"]="$butacas_disponibles" )
+		fi
+
+		# Se procede a aceptar la reserva, ya que esta paso todas las validaciones
+		aceptarReserva "$linea" "$1" "$combo"
+
+		# Se contabiliza como reserva OK
+		cant_reservas_ok=$(( $cant_reservas_ok + 1 ))
 
 	done
 
@@ -173,11 +234,84 @@ function rechazarArchivo() {
 
 # Rechaza la reserva e imprime en el log el motivo de rechazo.
 # Esta funcion graba un registro en el archivo 'reservas.nok'
-# Recibe como parametro el motivo del rechazo
+# Recibe como parametros: 1- El registro completo a rechazar, 2- El motivo del rechazo
+# 3- El nombre del archivo
 function rechazarReserva() {
-	local motivo=$1
-	# echo "Reserva rechazada. Motivo: $1"
+	local id_sala=""
+	local id_obra=""
+	local correo=""
+	local fecha_hoy=""
+	local usuario=""
+	local registro_nok=""
+
+	# Obtengo el id a partir del nombre del archivo
+	id_sala=`echo $3 | cut -d '-' -f "1"`
+
+	# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
+	if [ $(( $id_sala % 2 )) == "0" ]; then
+		# Es un ID Sala
+		id_obra="falta OBRA"
+	else
+		# Es un ID Obra
+		id_obra=$id_sala
+		id_sala="falta SALA"
+	fi
+
+	# Obtengo el correo a partir del nombre del archivo
+	correo=`echo $3 | cut -d '-' -f "2"`
+
+	# Obtengo la fecha del dia
+	fecha_hoy=`date +%D`
+
+	# Obtengo el usuario logueado actualmente
+	usuario=`id -u -n`
+
+	# Se arma el registro a guardar en el archivo
+	registro_nok="$1;$2;$id_sala;$id_obra;$correo;$fecha_hoy;$usuario"
+
+	# Se escribe el registro
+	echo "$registro_nok" >> "$PROCDIR/reservas.nok"
 }
+
+# Funcion que graba en el archivo 'reservas.ok' el registro correspondiente a la reserva
+# correctamente realizada. 
+# Recibe como parametros: 1- El registro completo a aceptar, 2- Nombre del archivo, 3- Combo
+function aceptarReserva() {
+	# Se leen los campos del primer argumento
+	local ref_interna=`echo $1 | cut -d ';' -f "1"`
+	local fecha_evento=`echo $1 | cut -d ';' -f "2"`
+	local hora_evento=`echo $1 | cut -d ';' -f "3"`
+	local butacas_solicitadas=`echo $1 | cut -d ';' -f "6"`
+
+	# Se leen los campos del 2do argumento
+	local correo_solicitante=`echo $2 | cut -d '-' -f "2"`
+
+	# Se leen los parametros del 3er argumento
+	local id_obra=`echo $3 | cut -d ';' -f "2"`
+	local id_sala=`echo $3 | cut -d ';' -f "5"`
+	local id_combo=`echo $3 | cut -d ';' -f "1"`
+
+	# Se obtiene la fecha actual
+	local fecha_hoy=`date +%D`
+
+	# Se obtiene el usuario logueado actualmente
+	local usuario=`id -u -n`
+
+	# Se obtiene la informacion que resta
+	local nombre_obra=`grep "$id_obra\(;[^;]\+\)\{3\}" "$MAEDIR/obras.mae"`
+	nombre_obra=`echo $nombre_obra | cut -d ';' -f "2"`
+
+	local nombre_sala=`grep "$id_sala\(;[^;]\+\)\{5\}" "$MAEDIR/obras.mae"`
+	nombre_sala=`echo $nombre_sala | cut -d ';' -f "2"`
+
+	# Se arma el registro
+	local registro_ok="$id_obra;$nombre_obra;$fecha_evento;$hora_evento;$id_sala;$nombre_sala;$butacas_solicitadas;$id_combo;$ref_interna;$butacas_solicitadas;$correo;$fecha_hoy;$usuario"
+
+	# Se graba en el archivo
+	echo "$registro_ok" >> "$PROCDIR/reservas.ok"
+
+}
+
 
 # Funcion que valida el campo fecha
 # Si la fecha es correcta, devuelve 0. De lo contrario, devuelve 1.
@@ -188,7 +322,7 @@ function validarFecha() {
 
 	# Compruebo si la fecha esta vacia
 	if [ -z "$fecha_a_validar" ]; then
-		rechazarReserva "Error en los parametros ingresados en Reservar_B"
+		echo "Error en los parametros ingresados en Reservar_B"
 		return $INVALIDO
 	else
 		# Obtengo dia, mes y anio
@@ -205,7 +339,7 @@ function validarFecha() {
 		if [ "$validez" == "0" ]; then
 			return $VALIDO
 		else
-			rechazarReserva "Se ingreso una fecha invalida"
+			echo "Se ingreso una fecha invalida"
 			return $INVALIDO
 		fi
 	fi
@@ -220,7 +354,8 @@ function verificarAnticipacion() {
 	local hoy=`date +%D`
 
 	if [ -z "$fecha_funcion" ]; then
-		rechazarReserva "Fecha invalida"
+		echo "Fecha invalida"
+		return $INVALIDO
 	else
 
 		# Invierto la fecha para obtener el formato mm/dd/aaaa
@@ -235,13 +370,13 @@ function verificarAnticipacion() {
 
 			# Si ('dias' >= 0) -> Rechazar
 			if [ "$distancia_dias" -ge "0" ]; then
-				rechazarReserva "Reserva realizada con menos de 2 dias de anticipacion"
+				echo "Reserva realizada con menos de 2 dias de anticipacion"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
 			# Si es para una fecha vencida, la rechazo
 			elif [ "$distancia_dias" -lt "0" ]; then
-				rechazarReserva "La fecha ingresada no corresponde con un evento vigente"
+				echo "La fecha ingresada no corresponde con un evento vigente"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
@@ -250,7 +385,7 @@ function verificarAnticipacion() {
 			# Si la reserva tiene mas de 30 dias de anticipacion, la rechazo
 			# ('dias' > 30)
 			if [ "$distancia_dias" -gt "30" ]; then
-				rechazarReserva "Reserva realizada con mas de 30 dias de anticipacion"
+				echo "Reserva realizada con mas de 30 dias de anticipacion"
 				# Se devuelve el estado 1
 				return $INVALIDO
 			else
@@ -268,87 +403,86 @@ function validarHora() {
 	if [ "$validez_hora" == "0" ]; then
 		return $VALIDO
 	else
-		rechazarReserva "Hora de la función invalida"
+		echo "Hora de la función invalida"
 		return $INVALIDO
 	fi
 }
 
 # Funcion que valida si el evento pedido existe. Es decir, comprueba
 # si existe un evento con el respectivo ID, Fecha y Hora. En vaso de existir, devuelve
-# el numero de combo correspondiente al evento. Sino, devuelve 'null' indicando la no existencia
+# el combo correspondiente al evento. Sino, devuelve 'null' indicando la no existencia
 # del evento seleccionado
 # Recibe como parametros: 1- ID, 2- Fecha, 3- Hora.
 function validarEvento() {
 	local id_evento=$1
 	local fecha_evento=$2
 	local hora_evento=$3
-	local id_combo_evento=0
+	local combo_evento=0
 
 	# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
 	if [ $(( $id_evento % 2 )) == "0" ]; then
 		# Es un ID Sala
-		id_combo_evento=`grep "C\?[0-9]\+;[0-9]\+;$fecha_evento;$hora_evento;$id_evento;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
+		combo_evento=`grep "C\?[0-9]\+;[0-9]\+;$fecha_evento;$hora_evento;$id_evento;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
 	else
 		# Es un ID Obra
-		id_combo_evento=`grep "C\?[0-9]\+;$id_evento;$fecha_evento;$hora_evento;[0-9]\+;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
+		combo_evento=`grep "C\?[0-9]\+;$id_evento;$fecha_evento;$hora_evento;[0-9]\+;[0-9]\+;[0-9]\+;[^;]\+" "$PROCDIR/combos.dis"`
 	fi
 
 	# Si el evento no es valido, se rechaza la reserva
 	if [ "$?" != "0" ]; then
-		rechazarReserva "Los datos ingresados no corresponden a un evento existente"
 		echo "null"
 	else
-		# Sino, se devuelve 0 y se guarda en el ultimo parametro el valor de id_combo de este evento
-		id_combo_evento=`echo $id_combo_evento | sed "s:\(C\?[0-9]\+\);.\+:\1:"`
-		echo "$id_combo_evento"
+		# Sino, se devuelve 0 y se guarda en el ultimo parametro el valor del combo de este evento
+		echo "$combo_evento"
 	fi
 }
 
 # Funcion que comprueba si para cierto evento existente, hay disponibilidad o no.
 # Devuelve 0 si hay lugar, o 1 en caso contrario.
 # Recibe como parametros: 1- ID Combo, 2- Cantidad butacas requeridas
-function comprobarDisponibilidad() {
-	local estado=0
+# function comprobarDisponibilidad() {
+	# return 0
+	# local estado=0
 
-	# Si existe un registro en la tabla de disponibilidades, entonce uso ese valor
-	if [ -n "${disponibilidades["$1"]}" ]; then
-		# Si hay mas o igual cantidad de butacas disponibles, entonces acepto
-		if [ "${!disponibilidades["$1"]}" -ge "$2" ]; then
-			echo "Miro tabla y habian ${!disponibilidades["$1"]} butacas"
-			disponibilidades=( ["$1"]=$(( ${!disponibilidades["$1"]} - $2 )) )
-			export disponibilidades
-			echo "Miro Tabla. Hay lugar y quedan ${!disponibilidades["$1"]} butacas"
-			return $VALIDO
-		else
-			echo "Miro Tabla. No hay lugar"
-			return $INVALIDO
-		fi
-	else
-		# Sino, se levanta del arcihvo la disponibilidad correspondiente
-		butacas_disponibles=`grep "^C\?[0-9]\+;.\+" "$PROCDIR/combos.dis"`
-		butacas_disponibles=`echo $butacas_disponibles | sed "s:C\?[0-9]\+;\([^;]\+;\)\{5\}\([0-9]\+\);[^;]\+:\2:"`
+	# echo "Argumentos ID Combo: $1 y cant butacas: $2" >> "$PROCDIR/argsDispo"
 
-		# Se chequea si hay espacio suficiente
-		if [ "$butacas_disponibles" -ge "$2" ]; then
-			butacas_disponibles=$(( $butacas_disponibles - $2 ))
-			echo "Habia lugar en archivo y quedan $butacas_disponibles porque pidieron $2"
-			estado=$VALIDO
-		else
-			estado=$INVALIDO
-		fi
+	# echo "Estado de la tabla: Valores: ${disponibilidades[@]} y Claves: ${!disponibilidades[@]}" >> "$PROCDIR/argsDispo"
 
-		# Se agrega en la tabla
-		disponibilidades=( ["$1"]="$butacas_disponibles" )
+	# # Si existe un registro en la tabla de disponibilidades, entonce uso ese valor
+	# if [ -n "${disponibilidades["$1"]}" ]; then
+	# 	# Si hay mas o igual cantidad de butacas disponibles, entonces acepto
+	# 	if [ "${disponibilidades["$1"]}" -ge "$2" ]; then
+	# 		disponibilidades=( ["$1"]=$(( ${disponibilidades["$1"]} - $2 )) )
+	# 		return $VALIDO
+	# 	else
+	# 		echo "No hay la suficiente cantidad de butacas para aceptar la reserva"
+	# 		return $INVALIDO
+	# 	fi
+	# else
+	# 	# Sino, se levanta del arcihvo la disponibilidad correspondiente
+	# 	butacas_disponibles=`grep "^C\?[0-9]\+;.\+" "$PROCDIR/combos.dis"`
+	# 	butacas_disponibles=`echo $butacas_disponibles | sed "s:C\?[0-9]\+;\([^;]\+;\)\{5\}\([0-9]\+\);[^;]\+:\2:"`
 
-		export disponibilidades
+	# 	# Se chequea si hay espacio suficiente
+	# 	if [ "$butacas_disponibles" -ge "$2" ]; then
+	# 		butacas_disponibles=$(( $butacas_disponibles - $2 ))
+	# 		estado=$VALIDO
+	# 	else
+	# 		echo "No hay la suficiente cantidad de butacas para aceptar la reserva"
+	# 		estado=$INVALIDO
+	# 	fi
 
+	# 	# Se agrega en la tabla
+	# 	disponibilidades+=( ["$1"]="$butacas_disponibles" )
 
-		echo "Miro archivo. Hay ${disponibilidades["$1"]} butacas disponibles"
+	# 	echo "Disponibilidad en tabla para evento $1: ${disponibilidades["$1"]}" >> "$PROCDIR/argsDispo"
+
+	# 	echo "Tabla disponibilidad: $disponibilidades" >> "$PROCDIR/argsDispo"
 		
-		# Se devuelve el estado
-		return $estado
-	fi
-}
+	# 	# Se devuelve el estado
+	# 	return $estado
+	# fi
+# }
 
 
 # DEBUG: Se debe cambiar el path ingresado por la variable de entorno:
@@ -367,6 +501,7 @@ function comprobarDisponibilidad() {
 # DEBUG: Por ahora el path de la carpeta arribos se define 
 ACEPDIR="./aceptados/"
 PROCDIR="./procesados/"
+MAEDIR="./maestro/"
 # Variables
 cant_elemetos=0
 ret_val=0
@@ -375,10 +510,16 @@ declare -A disponibilidades
 
 # Busca la cantidad de elementos contenidos en el directorio
 cant_elemetos=`ls -p $ACEPDIR | wc -l`
+
+# Se graba en el log el inicio de este comando y la cantidad de archivos a procesar
+log "W" "Inicio de Reservar_B. Cantidad de archivos en $PROCDIR: $cant_elementos"
+
 # Para cada elemento...
 for j in `seq 1 ${cant_elemetos}`; do
 	# Obtengo el nombre de un elemento
 	nombre_archivo=`ls -1p $ACEPDIR | head -n 1`
+
+	log "W" "Archivo a procesar: $nombre_archivo"
 
 	# Si se trata de un archivo
 	if [ -f $ACEPDIR$nombre_archivo ]; then
@@ -394,6 +535,9 @@ for j in `seq 1 ${cant_elemetos}`; do
 			# Si no es un archivo valido, se mueve a RECHDIR
 			rechazarArchivo $nombre_archivo
 		fi
+
+		# echo "Tabla disponibilidad: $disponibilidades" >> "$PROCDIR/argsDispo"
+
 	elif [ -d $ACEPDIR$nombre_archivo ]; then
 		echo "Se trata de un dir"
 	else
