@@ -15,7 +15,7 @@ conf="$CONFDIR/Instalar_TP.conf"
 BINDIR="$GRUPO/bin"
 MAEDIR="$GRUPO/mae"
 ARRIDIR="$GRUPO/arribos"
-ACEPTDIR="$GRUPO/aceptados"
+ACEPDIR="$GRUPO/aceptados"
 RECHDIR="$GRUPO/rechazados"
 REPODIR="$GRUPO/listados"
 PROCDIR="$GRUPO/procesados"
@@ -30,20 +30,92 @@ log (){
 	echo " $2"	
 }
 
-instalacion_completa () {
-	return 0
+cargar_config () {
+	#Lee el archivo de conf y carga las variables
+	
+	if [ -f $conf ]
+	then
+		while IFS== read -r var valor usuario fecha
+		do
+			case "$var" in 
+			GRUPO) GRUPO=$valor ;;
+			CONFDIR) CONFDIR=$valor ;;
+			ACEPDIR) ACEPDIR=$valor ;;
+			PROCDIR) PROCDIR=$valor ;;
+			ARRIDIR) ARRIDIR=$valor ;;
+			RECHDIR) RECHDIR=$valor ;;
+			BINDIR) BINDIR=$valor ;;
+			MAEDIR) MAEDIR=$valor ;;
+			LOGDIR) LOGDIR=$valor ;;
+			REPODIR) REPODIR=$valor ;;
+			LOGEXT) LOGEXT=$valor ;;
+			LOGSIZE) LOGSIZE=$valor ;;
+			DATASIZE) DATASIZE=$valor ;;
+			esac
+			
+		done < $conf
+		return 0
+	else
+		return 1
+	fi
+	
 }
 
-mensajes_directorios () {
-	return 1
-}
+mensaje_instalacion_existente_incompleta () {
+	./.tmp/bin/VerificarInstalacion.sh BIN $conf ; ec_BIN=$?
+	./.tmp/bin/VerificarInstalacion.sh MAE $conf ; ec_MAE=$?
+	./.tmp/bin/VerificarInstalacion.sh LOG $conf ; ec_LOG=$?
+	./.tmp/bin/VerificarInstalacion.sh ARR $conf ; ec_ARR=$?
+	./.tmp/bin/VerificarInstalacion.sh ACEP $conf ; ec_ACEP=$?
+	./.tmp/bin/VerificarInstalacion.sh REC $conf ; ec_REC=$?
+	./.tmp/bin/VerificarInstalacion.sh REP $conf ; ec_REP=$?
+	./.tmp/bin/VerificarInstalacion.sh PROC $conf ; ec_PROC=$?
 
-completar_instalacion () {
-	return 1
-}
+	ls_conf = `ls $CONFDIR`
+	log "I" "Librería del Sistema:  $CONFDIR .Archivos: $ls_conf"
 
-loguear_componentes_faltantes () { 
-	return 1
+	if [ $ec_BIN == 0 ]
+	then 
+		log "I" "Ejecutables: $BINDIR " 
+		log "I" `ls $BINDIR`
+	fi
+
+	if [ $ec_MAE == 0 ]
+	then 
+		log "I" "Archivos maestros: $MAEDIR"
+		log "I" `ls $MAEDIR`
+	fi
+
+	if [ $ec_ARR == 0 ] ; then log "I" "Directorio de arribo de archivos externos: $ARRIDIR" ; fi
+	if [ $ec_ACEP == 0 ] ; then log "I" "Archivos externos aceptados: $ACEPDIR" ; fi
+	if [ $ec_REC == 0 ] ; then log "I" "Archivos externos rechazados: $RECHDIR" ;	fi
+	if [ $ec_REP == 0 ] ; then log "I" "Reportes de salida: $REPODIR" ; fi
+	if [ $ec_PROC == 0 ] ; then log "I" "Archivos procesados: $PROCDIR" ; fi
+	if [ $ec_LOG == 0 ] ; then log  "I" "Logs de auditoría del Sistema: $LOGDIR/<comando>.$LOGEXT" ; fi	
+	
+		
+	log "I"  "Componentes faltantes: "
+	
+	if [ $ec_BIN == 2 ] ; then log "I" "Directorio de instalación de los ejecutables" ; FALTA_BINDIR=2
+	else
+		if [ $ec_BIN == 1 ]
+		then 
+			log "I" "Archivos ejecutables: Iniciar_B.sh, Recibir_B.sh, Reservar_B.sh, Mover_B.pl, Start_D.sh, Stop_D.sh, functions.pm"
+			FALTA_BINDIR=1
+		fi
+	fi
+
+	if [ $ec_MAE == 2 ] ; then log "I" "Directorio de instalación de los archivos maestros" ; FALTA_MAEDIR=2 
+	else
+		if [ $ec_MAE == 1 ] ; then log "I" "Archivos maestros: salas.mae, obras.mae" ; FALTA_MAEDIR=1 ; fi
+	fi
+
+	if [ $ec_ARR == 2 ] ; then log "I" "Directorio de arribo de archivos externos" ; FALTA_ARRIDIR=2 ; fi
+	if [ $ec_ACEP == 2 ] ; then log "I" "Archivos externos aceptados" ; FALTA_ACEPDIR=2 ; fi
+	if [ $ec_REC == 2 ] ; then log "I" "Archivos externos rechazados" ; FALTA_RECDIR=2 ; fi
+	if [ $ec_REP == 2 ] ; then log "I" "Reportes de salida" ; FALTA_REPDIR=2 ; fi
+	if [ $ec_PROC == 2 ] ; then log "I" "Archivos procesados" ; FALTA_PROC=2 ; fi
+	if [ $ec_LOG == 2 ] ; then log "I" "Logs de auditoría del Sistema" ; FALTA_LOGDIR=2 ; fi
 }
 
 leer_opcion_si_no () {
@@ -261,7 +333,7 @@ mensaje_dir_instalacion (){
 	log "I" "Archivos maestros: $MAEDIR"
 	log "I" "Directorio de arribo de archivos externos: $ARRIDIR"
 	log "I" "Espacio mínimo libre para arribos: $DATASIZE Mb"
-	log "I" "Archivos externos aceptados: $ACEPTDIR"
+	log "I" "Archivos externos aceptados: $ACEPDIR"
 	log "I" "Archivos externos rechazados: $RECHDIR"
 	log "I" "Reportes de salida: $REPODIR"
 	log "I" "Archivos procesados: $PROCDIR"
@@ -273,6 +345,16 @@ mensaje_dir_instalacion (){
 error_al_instalar () { 
 	log "SE" "$1"
 	exit 1
+}
+
+limpiar_archivos_de_instalacion () {
+	if [ -d "${GRUPO}/.tmp" ]
+	then 
+		log "I" "Eliminando archivos de instalación"
+		`rm ${GRUPO}/.tmp/*/*`
+		`rmdir ${GRUPO}/.tmp/*`
+		`rmdir ${GRUPO}/.tmp`
+	fi
 }
 
 instalar () {
@@ -317,12 +399,12 @@ instalar () {
 	fi
 	log "I" "$RECHDIR"
 
-	mkdir -p $ACEPTDIR
+	mkdir -p $ACEPDIR
 	if [ $? != 0 ]
 	then 
 		error_al_instalar "No se pudo generar el directorio de archivos externos aceptados"
 	fi
-	log "I" "$ACEPTDIR"
+	log "I" "$ACEPDIR"
 
 	mkdir -p $REPODIR
 	if [ $? != 0 ]
@@ -376,7 +458,7 @@ instalar () {
 	linea="BINDIR=${BINDIR}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="MAEDIR=${MAEDIR}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="ARRIDIR=${ARRIDIR}=${user}=${date}" ; echo "$linea" >> $conf
-	linea="ACEPTDIR=${ACEPTDIR}=${user}=${date}" ; echo "$linea" >> $conf
+	linea="ACEPDIR=${ACEPDIR}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="RECHDIR=${RECHDIR}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="REPODIR=${REPODIR}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="PROCDIR=${PROCDIR}=${user}=${date}" ; echo "$linea" >> $conf
@@ -417,31 +499,122 @@ fi
 
 if [ $existe_conf == 1 ] #changeeeeeeeeeeeee
 then
-	instalacion_completa
+	./.tmp/bin/VerificarInstalacion.sh COM $conf
+	inst_completa=$?
 	completa=$?
-	if [ $completa == 1 ]
+	if [ $completa == 0 ]
 	then
 		log I $COPY_W
-		mensajes_directorios
+		cargar_config
+		mensaje_dir_instalacion
 		log I "Estado de la instalación: COMPLETA"
 		log I "Proceso de Instalación Cancelado"
 		# Se termina la ejecución porque ya está todo instalado
 		exit 0
 	fi
 	#Si pasa por aca es que la instalación no está completa
+	cargar_config
 	completar_instalacion
 	log I $COPY_W
-	mensajes_directorios
-	loguear_componentes_faltantes
+	mensaje_instalacion_existente_incompleta
 	log I "Estado de la instalación: INCOMPLETA"
 	leer_opcion_si_no "Desea completar la instalación? (Si-No)"
 	if [ $? == 0 ]
 	then
 		log SE "Instalación incompleta"
 		exit 0
+	else ############## INSTALACION DE COMPONENTES FALTANTES ############
+		log I "Continuando con la instalacion de los componentes faltantes"
+		detectar_perl
+		datos_ok=0
+
+		while [ $datos_ok != 1 ]
+		do
+			if [ "$FALTA_BINDIR" == "2" ]
+			then 
+				log I "Defina el directorio de instalación de los ejecutables"
+				BINDIR=`def_dir "(entrar para default: $BINDIR):" $BINDIR`
+				echo $BINDIR
+			fi
+			
+			if [ "$FALTA_MAEDIR" == "2" ]
+			then 
+				log I "Defina el directorio de instalación de los archivos maestros"
+				MAEDIR=`def_dir "(entrar para default: $MAEDIR):" $MAEDIR`
+				echo $MAEDIR
+			fi
+
+			if [ "$FALTA_ARRIDIR" == "2" ]
+			then 
+				log I "Defina el directorio de arribo de archivos externos"
+				ARRIDIR=`def_dir "(entrar para default: $ARRIDIR):" $ARRIDIR`
+				echo $ARRIDIR
+			fi
+
+			if [ "$FALTA_ACEPDIR" == "2" ]
+			then 
+				log I "Defina el directorio de grabación de los archivos externos aceptados"
+				ACEPDIR=`def_dir "(entrar para default: $ACEPDIR):" $ACEPDIR`
+				echo $ACEPDIR
+			fi
+
+			if [ "$FALTA_RECDIR" == "2" ]
+			then 
+				log I "Defina el directorio de grabación de los archivos externos rechazados"
+				RECHDIR=`def_dir "(entrar para default: $RECHDIR):" $RECHDIR`
+				echo $RECHDIR
+			fi
+
+			if [ "$FALTA_REPDIR" == "2" ]
+			then 
+				log I "Defina el directorio de grabación de los listados de salida"
+				REPODIR=`def_dir "(entrar para default: $REPODIR):" $REPODIR`
+				echo $REPODIR
+			fi
+
+			if [ "$FALTA_PROC" == "2" ]
+			then 
+				log I "Defina el directorio de grabación de los archivos procesados"
+				PROCDIR=`def_dir "(entrar para default: $PROCDIR):" $PROCDIR`
+				echo $PROCDIR
+			fi
+
+
+			if [ "$FALTA_LOGDIR" == "2" ]
+			then 
+				log I "Defina el directorio de logs"
+				LOGDIR=`def_dir "(entrar para default: $LOGDIR):" $LOGDIR`
+				echo $LOGDIR
+			fi
+	
+			if [ "$DATASIZE" == "" ] ; then def_espacio_libre_min ; fi
+			if [ "$LOGSIZE" == "" ] ; then def_tam_log ; fi
+			if [ "$LOGEXT" == "" ] ; then def_extension_log ; fi
+
+			clear
+			mensaje_dir_instalacion
+			log "I" "Los datos ingresados son correctos? (Si-No): "
+			leer_opcion_si_no "Los datos ingresados son correctos? (Si-No): "
+			if [ $? == 1 ]
+			then 
+				datos_ok=1
+			fi
+		done
+
+		instalar
+		limpiar_archivos_de_instalacion
+		exit 0
 	fi
 fi
 #Se procede a instalar todo de cero
+log I $COPY_W
+log I "A T E N C I O N: Al instalar TP SO7508 Segundo Cuatrimestre 2013 UD. expresa aceptar los términos y Condiciones del ACUERDO DE LICENCIA DE SOFTWARE incluido en este paquete. "
+leer_opcion_si_no "Acepta? Si – No  "
+if [ $? == 0 ]
+then 
+	exit 0
+fi
+
 detectar_perl
 
 datos_ok=0
@@ -464,8 +637,8 @@ do
 	def_espacio_libre_min
 
 	log I "Defina el directorio de grabación de los archivos externos aceptados"
-	ACEPTDIR=`def_dir "(entrar para default: $ACEPTDIR):" $ACEPTDIR`
-	echo $ACEPTDIR
+	ACEPDIR=`def_dir "(entrar para default: $ACEPDIR):" $ACEPDIR`
+	echo $ACEPDIR
 
 	log I "Defina el directorio de grabación de los archivos externos rechazados"
 	RECHDIR=`def_dir "(entrar para default: $RECHDIR):" $RECHDIR`
@@ -502,5 +675,7 @@ do
 done
 
 instalar
+
+limpiar_archivos_de_instalacion
 
 exit 0
