@@ -10,8 +10,8 @@
 #
 # COMANDO RESERVAR_B
 # 
-# Comando que se encarga de leer los archivos que se encuentran en el directorio $ACEPDIR.
-# el cual contiene las resevas solicitadas y grabar sus registros en reservas confirmadas o en
+# Comando que se encarga de leer los archivos que se encuentran en el directorio $ACEPDIR
+# (que contiene las resevas solicitadas) y grabar sus registros en reservas confirmadas o en
 # reservas no confirmadas, según la disponibilidad de butacas y validaciones efectuadas en 
 # cuanto a formato, oportunidad y disponibilidad.
 #
@@ -39,19 +39,18 @@
 readonly INVALIDO=1
 readonly VALIDO=0
 readonly LOG_PATH="./log/Reservar_B.log"
-SCRIPTS="$./"
+SCRIPTS="./"
 
 # Funcion que escribe en el log
 # Recibe como parametros: 1- Tipo de mensaje, 2- Mensaje
 function log (){
     perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Reservar_B', '$1', '$2', '$LOG_PATH')"
-    # return 0
 }
 
 
-# Funcion que valida que el archivo en cuestion no haya sido procesado antes
+# Funcion que valida que el archivo en cuestion no haya sido procesado antes.
 # Devueve 0 si no fue procesado, y 1 en caso contrario.
-# Recibe como parametro el nombre del archivo.
+# Recibe como parametro: 1- El nombre del archivo.
 function validarDuplicados() {
 	# Se obtiene el nombre del archivo sin la extension de repeticion
 	local nombre_sin_duplicado=`echo $1 | grep "^\([0-9]\+-[^-]\+-[^-\.]\+\)"`
@@ -64,9 +63,9 @@ function validarDuplicados() {
 	fi
 }
 
-# Funcion que valida si el archivo esta vacio
-# Recibe como parametros el nombre del archivo
-# Devuelve 0 si no esta vacio, y 1 en caso contrario
+# Funcion que valida si el archivo esta vacio.
+# Devuelve 0 si no esta vacio, y 1 en caso contrario.
+# Recibe como parametros: 1- El nombre del archivo.
 function validarTamanio() {
 	# Si existe el archivo y ademas tiene tamaño mayor a 0
 	if [ -s "$ACEPDIR$1" ]; then
@@ -78,41 +77,49 @@ function validarTamanio() {
 
 # Funcion que valida el archivo, es decir: comprueba si esta vacio o si fue ya procesado. 
 # Si es valido, devuelve un codigo de 0, sino devuelve 1 y el motivo del rechazo.
-# Recibe como parametro el nombre del archivo
+# Recibe como parametro: 1- El nombre del archivo
 function archivoValido() {
 	local ret_val_AV=0
+
 	# Verifico si el archivo esta duplicado, es decir, ya ha sido procesado
 	ret_val_AV=`validarDuplicados $1; echo $?`
 
-	# Si no fue procesado,
-	if [ "$ret_val_AV" == "0" ]; then
-		# Se analiza si esta vacio
-		ret_val_AV=`validarTamanio $1; echo $?`
-
-		# Si no esta vacio, devuelve 0
-		if [ "$ret_val_AV" == "0" ]; then
-			return $VALIDO
-		else
-			# Si esta vacio, devuelve 1
-			echo "El archivo $1 se encuentra vacio"
-			return $INVALIDO
-		fi
-
-	else
-		# Si ya fue procesado, devuelve 1
+	# Si fue procesado, se devuelve 1
+	if [ "$ret_val_AV" != "0" ]; then
 		echo "El archivo $1 ya fue procesado."
 		return $INVALIDO
 	fi
+
+	# Sino, se analiza si esta vacio
+	ret_val_AV=`validarTamanio $1; echo $?`
+
+	# Si esta vacio, devuelve 1
+	if [ "$ret_val_AV" != "0" ]; then
+		echo "El archivo $1 se encuentra vacio"
+		return $INVALIDO
+	fi
+
+	# Sino, se analiza que los campos obligatorios esten
+	ret_val_AV=`grep -c -v "^[0-9]*;[^ ;]\+;[^ ;]\+;[^ ;]*;[^ ;]*;[0-9]\+;[^ ;]*$" "$ACEPDIR$1"`
+	
+	# Si hay 1 o mas lineas invalidas, entonces se rechaza el archivo completo
+	if [ "$ret_val_AV" != "0" ]; then
+		echo "El archivo $1 tiene registros $ret_val_AV invalidos."
+		return $INVALIDO
+	fi
+
+	return $VALIDO
+
 }
 
-# Funcion que procesa linea por linea el archivo que recibe como parametros.
-# Una vez procesado, traslada el archivo hacia el directorio $PROCDIR
-# Recibe como parametro el nombre del archivo
+# Funcion que procesa linea por linea el archivo que recibe. Realiza comprobaciones
+# de campos, valida los registros y por ultimo procesa la información contenida.
+# Recibe como parametro: 1El nombre del archivo
 function procesarArchivo() {
 	# Variables
 	local linea=""
 	local ret_val_PA=0
-	local motivo
+	local motivo=""
 	local cant_lineas_arch=0
 	local fecha=""
 	local hora=""
@@ -135,8 +142,6 @@ function procesarArchivo() {
 	for i in `seq 1 ${cant_lineas_arch}`; do
 		linea=`head -n $i $ACEPDIR${1} | tail -n 1`
 
-	#	grep '^[0-9]*;\([0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\}\);[0-9]\{2\}:[0-9]\{2\};[a-zA-Z]*;[a-zA-Z]*;[0-9]\+;[a-zA-Z]*' Docu
-
 		# Levanto el campo 2, que es el de la fecha
 		fecha=`echo ${linea} | cut -d ';' -f "2"`
 
@@ -146,7 +151,9 @@ function procesarArchivo() {
 
 		# Si no es valida, se rechaza la reserva y se procesa otra linea del archivo
 		if [ "$ret_val_PA" != "0" ]; then
+			# Se rechaza la reserva
 			rechazarReserva "$linea" "$motivo" "$1"
+			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
@@ -157,7 +164,9 @@ function procesarArchivo() {
 
 		# Si la reserva tiene mas de 30 dias de anticipacion o menos de 2, se rechaza la reserva y se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
+			# Se rechaza la reserva
 			rechazarReserva "$linea" "$motivo" "$1"
+			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
@@ -169,9 +178,11 @@ function procesarArchivo() {
 		motivo=`validarHora $hora`
 		ret_val_PA=`echo $?`
 
-		# Si la hora no es valida, se lee la siguiente linea
+		# Si la hora no es valida, se rechaza la reserva y se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
+			# Se rechaza la reserva
 			rechazarReserva "$linea" "$motivo" "$1"
+			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
@@ -182,8 +193,10 @@ function procesarArchivo() {
 
 		# Si no existe el evento seleccionado, se lee el siguiente registro
 		if [ "$combo" == "null" ]; then
+			# Se rechaza la reserva
 			motivo="El evento seleccionado no existe"
 			rechazarReserva "$linea" "$motivo" "$1"
+			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
 		fi
@@ -207,6 +220,7 @@ function procesarArchivo() {
 				# Si no hay lugar, se rechaza la reserva
 				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
 				rechazarReserva "$linea" "$motivo" "$1"
+				# Se contabiliza un registro mas invalido
 				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 				continue
 			fi
@@ -223,6 +237,7 @@ function procesarArchivo() {
 				# Si no hay butacas suficientes, se rechaza la reserva
 				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
 				rechazarReserva "$linea" "$motivo" "$1"
+				# Se contabiliza un registro mas invalido
 				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 				continue
 			fi
@@ -240,8 +255,7 @@ function procesarArchivo() {
 	done
 
 	# Se graba la cantidad de reservas OK y NOK
-	log "I" "Se finalizo el proceso del archivo $1. Cantidad de reservas aceptadas: $cant_reservas_ok. 
-	Cantidad de reservas rechazadas: $cant_reservas_nok."
+	log "I" "Se finalizo el proceso del archivo $1. Cantidad de reservas aceptadas: $cant_reservas_ok. Cantidad de reservas rechazadas: $cant_reservas_nok."
 
 	# Se graba un mensaje de debug, en el cual: #Registros = #Aceptados + #Rechazados
 	log "D" "$cant_lineas_arch (registros) = $cant_reservas_ok (reservas aceptadas) + $cant_reservas_nok (reservas rechazadas)"
@@ -249,17 +263,17 @@ function procesarArchivo() {
 }
 
 # Funcion que guarda un mensaje en el log de archivo invalido y además
-# traslada el archivo hacia el directorio $RECHDIR
+# traslada el archivo hacia el directorio $RECHDIR.
 # Recibe como parametros: 1- El nombre del archivo, 2- Motivo rechazo
 function rechazarArchivo() {
     # Movemos archivo a $RECHDIR
-    # perl ./Mover_B.pl "$ACEPDIR$1" "$RECHDIR" "Reservar_B"
+    perl ./Mover_B.pl "$ACEPDIR$1" "$RECHDIR" "Reservar_B"
     
     # Se graba en el log un mensaje aclaratorio
     log "M" "El archivo se rechaza por el siguiente motivo: $2"
 }
 
-# Rechaza la reserva e imprime en el log el motivo de rechazo.
+# Funcion que rechaza la reserva e imprime en el log el motivo de rechazo.
 # Esta funcion graba un registro en el archivo 'reservas.nok'
 # Recibe como parametros: 1- El registro completo a rechazar, 2- El motivo del rechazo
 # 3- El nombre del archivo
@@ -340,7 +354,7 @@ function aceptarReserva() {
 }
 
 
-# Funcion que valida el campo fecha
+# Funcion que valida el campo fecha.
 # Si la fecha es correcta, devuelve 0. De lo contrario, devuelve 1.
 # Recibe como parametros: 1- La fecha
 function validarFecha() {
@@ -423,8 +437,8 @@ function verificarAnticipacion() {
 	fi
 }
 
-# Funcion que verifica que la hora sea valida
-# Recibe como parametro la hora, si no está en formato hh:mm -> se rechaza
+# Funcion que verifica que la hora de la reserva sea valida. Si no está en formato hh:mm -> se rechaza
+# Recibe como parametro: 1- La hora.
 function validarHora() {
 	local validez_hora=`date --date="$1" &> /dev/null; echo $?`
 	if [ "$validez_hora" == "0" ]; then
@@ -438,7 +452,7 @@ function validarHora() {
 # Funcion que valida si el evento pedido existe. Es decir, comprueba
 # si existe un evento con el respectivo ID, Fecha y Hora. En vaso de existir, devuelve
 # el combo correspondiente al evento. Sino, devuelve 'null' indicando la no existencia
-# del evento seleccionado
+# del evento seleccionado.
 # Recibe como parametros: 1- ID, 2- Fecha, 3- Hora.
 function validarEvento() {
 	local id_evento=$1
@@ -459,23 +473,28 @@ function validarEvento() {
 	if [ "$?" != "0" ]; then
 		echo "null"
 	else
-		# Sino, se devuelve 0 y se guarda en el ultimo parametro el valor del combo de este evento
+		# Sino, se devuelve 0 y se devuelve el valor del combo de este evento
 		echo "$combo_evento"
 	fi
 }
 
 
-# DEBUG: Se debe cambiar el path ingresado por la variable de entorno:
+# Funcion que persiste en el archivo 'combos.dis' las disponibilidades actualizadas.
+# No recibe parametros
+function guardarDisponibilidades() {
+	# Se guarda la cantidad de elementos en la tabla
+	local id_c=0
 
-#nombre="Wiii/miArch.txt"
-#regex2="\b([0-9a-zA-Z\.]+/)*(([0-9a-zA-Z]+)(\.[0-9a-zA-Z]+)?)\b"
-#regex="s:(/?)(\([0-9a-zA-Z]+)(.[0-9a-zA-Z]+)?\)$:PROCESAR/\1:"
-#patron_archivo="^[0-9]\+-[^ @]\+@[^ @\.]\+.[a-zA-Z]\+-[^ -]*$"
+	# Para cada elemento, se lo busca en el archivo y se lo actualiza
+	for id_c in ${!disponibilidades[*]}; do
+		sed -i "s:^\(C\?\)$id_c;\([0-9]\+;[^;]\+;[^;]\+;[0-9]\+;[0-9]\+\);\([0-9]\+\);\(.\+\)$:\1$id_c;\2;${disponibilidades[$id_c]};\4:" "$PROCDIR/combos.dis"
+	done
+
+	log "I" "Actualización del archivo de disponibilidad"
+}
 
 
-#paso=`grep -x ${regex2} "./"`
-#echo "Processing $nombre file..."
-#echo "Processing $paso file..."
+###### Programa principal ######
 
 
 # DEBUG: Por ahora el path de la carpeta arribos se define 
@@ -483,6 +502,7 @@ ACEPDIR="./aceptados/"
 PROCDIR="./procesados/"
 MAEDIR="./maestro/"
 RECHDIR="./rechazados/"
+
 # Variables
 cant_elementos=0
 ret_val=0
@@ -501,9 +521,9 @@ for j in `seq 1 ${cant_elementos}`; do
 	# Obtengo el nombre de un elemento
 	nombre_archivo=`ls -1p $ACEPDIR | head -n 1`
 
-	log "I" "Archivo a procesar: $nombre_archivo"
+	log "I" "Archivo a procesar: $nombre_archivo."
 
-	# Si se trata de un archivo
+	# Si se trata de un archivo,
 	if [ -f $ACEPDIR$nombre_archivo ]; then
 		# Se analiza si es valido
 		motivo_rechazo=`archivoValido $nombre_archivo`
@@ -516,11 +536,11 @@ for j in `seq 1 ${cant_elementos}`; do
 			procesarArchivo $nombre_archivo
 
 			# Y se mueve a $PROCDIR
-    		# perl ./Mover_B.pl "$ACEPDIR$nombre_archivo" "$PROCDIR" "Reservar_B"
+    		perl ./Mover_B.pl "$ACEPDIR$nombre_archivo" "$PROCDIR" "Reservar_B"
 		else
 			echo "Descarto archivo $nombre_archivo"
 			# Si no es un archivo valido, se mueve a RECHDIR
-			rechazarArchivo $nombre_archivo $motivo_rechazo
+			rechazarArchivo "$nombre_archivo" "$motivo_rechazo"
 		fi
 	# Si es un directorio, se trata de la carpeta de duplicados -> se rechazan todos los archivos
 	elif [ -d $ACEPDIR$nombre_archivo ]; then
@@ -535,7 +555,7 @@ for j in `seq 1 ${cant_elementos}`; do
 			motivo_rechazo="Archivo $nombre_archivo_dup se encuentra duplicado"
 
 			# Se mueve a RECHDIR
-			rechazarArchivo $nombre_archivo_dup $motivo_rechazo
+			rechazarArchivo "$nombre_archivo_dup" "$motivo_rechazo"
 		done
 
 	else
@@ -543,36 +563,9 @@ for j in `seq 1 ${cant_elementos}`; do
 	fi
 
 	# Se persiste la tabla de disponibilidades en el archivo 'combos.dis'
-	
+	guardarDisponibilidades 
+
 done
 
+log "I" "Fin de Reservar_B"
 
-
-
-# FILES=../*
-# # Iteramos sobre los archivos del directorio
-# for f in $FILES
-# do
-#         # Procesamos solo los que son archivos
-#         if [ -f $f ]; then
-
-#                 # Verificamos si ya ha sido procesado el archivo anteriormente
-#                 `ls -l -lp Mover_B.pl &> /dev/null`
-#                 res=$?
-
-#                 # Si se encontró el archivo, está duplicado
-#                 if [ "$res" -eq "0" ]; then
-
-#                         # Movemos archivo a $RECHDIR
-#                         'perl ./Mover_B.pl $f $RECHDIR Reservar_B'
-
-#                         # Generamos entrada nueva en el log informando la situación
-#                         echo "todo piola"
-
-#                 # Caso en que no se encontró el archivo duplicado        
-#                 else
-#                         # Movemos archivo a $PROCDIR
-#                         'perl ./Mover_B.pl $f $PROCDIR Reservar_B'
-#                 fi
-#         fi
-# done
