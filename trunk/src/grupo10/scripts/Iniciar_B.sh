@@ -14,8 +14,7 @@ BASEPATH=`echo $PWD | grep -o '.*grupo10'`
 CONF="${BASEPATH}${CONFDIR}"
 ERRORCODE=0
 ########################FUNCTIONS########################
-function verificar_configuracion()
-{
+function verificar_configuracion(){
         #chequea si el archivo de configuración existe
         #CONF="./${CONFDIR}/${CONFFILE}"
         #El nombre del archivo de configuración es: $CONF
@@ -29,53 +28,27 @@ function verificar_configuracion()
         #echo "Verificar si la instalación está completa"
         return 0
 }
-function set_variables()
-{
-		#echo "Seteo de todas las variables en el archivo config"
-        #export GRUPO="./grupo10"
-        #export LOGSIZE=1024
-        #export DATASIZE=100000
-	while read LINE; do
-		#echo "$LINE"
-		VARIABLE=`echo $LINE | cut -d '=' -f '1'`
-		VALOR=`echo $LINE | cut -d '=' -f '2'`
-		if [[ $LINE != "" ]];
-		then
-			export $VARIABLE="$VALOR"
-		fi
-	done<$CONF
-	FILE="${LOGDIR}/archivo${LOGEXT}"
-    return 0
-}
-function inicializar_log()
-{
-        #echo "BASEPATH: $BASEPATH"
-        #echo "path config entero: $CONF"       
-        #Inicializar el archivo de log - GRABA EN LOG
-        perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Comando Iniciar_B Inicio de Ejecución', '')"
-        return 0
-}
 function verificar_ejecucion_anterior(){
 
-	#Verifico si todas las variables tienen valor
 	if [ "$BINDIR" != "" ] 
 	then
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Comando Iniciar_B Inicio de Ejecucion', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Librería del Sistema: $CONF', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls -lrt $CONF`', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de instalación de los ejecutables: $BINDIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls $BINDIR`', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de instalación de los archivos maestros: $MAEDIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls -lrt $MAEDIR`')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de arribo de archivos externos: $ARRIDIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los archivos externos rechazados: $RECHDIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los logs de auditoria: $LOGDIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los reportes de salida: $REPODIR', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'La extension de los archivos de log es: $LOGEXT', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'El tiempo de sleep del demonio es: $SLEEPTIME', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Estado del Sistema: INICIALIZADO', '')"
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'A', '0', 'No es posible efectual una reinicializacion del sistema.', '')"
+		log "I" "Comando Iniciar_B Inicio de Ejecucion"
+		log "I" "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
+		log "I" "Librería del Sistema: $CONF"
+		log "I" "`ls -lrt $CONF`"
+		log "I" "Directorio de instalación de los ejecutables: $BINDIR"
+		log "I" "`ls $BINDIR`"
+		log "I" "Directorio de instalación de los archivos maestros: $MAEDIR"
+		log "I" "`ls -lrt $MAEDIR`"
+		log "I" "Directorio de arribo de archivos externos: $ARRIDIR"
+		log "I" "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
+		log "I" "Directorio de grabación de los logs de auditoria: $LOGDIR"
+		log "I" "Directorio de grabación de los reportes de salida: $REPODIR"
+		log "I" "La extension de los archivos de log es: $LOGEXT"
+		log "I" "El tiempo de sleep del demonio es: $SLEEPTIME"
+		log "I" "Estado del Sistema: INICIALIZADO"
+		log "A" "No es posible efectual una reinicializacion del sistema."
+
 		echo "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
 		echo ""
 		echo "Librería del Sistema: $CONF"
@@ -108,38 +81,59 @@ function verificar_ejecucion_anterior(){
 	fi
 	return 0
 }
+function set_variables(){
+		#echo "Seteo de todas las variables en el archivo config"
+        #export GRUPO="./grupo10"
+        #export LOGSIZE=1024
+        #export DATASIZE=100000
+	while read LINE; do
+		#echo "$LINE"
+		VARIABLE=`echo $LINE | cut -d '=' -f '1'`
+		VALOR=`echo $LINE | cut -d '=' -f '2'`
+		if [[ $LINE != "" ]];
+		then
+			export $VARIABLE="$VALOR"
+		fi
+	done<$CONF
+	FILE="${LOGDIR}/archivo${LOGEXT}"
+    return 0
+}
+function log (){
+	perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
+	return 0	
+}
 function verificar_instalacion(){
 	VERIFICADIR="${BINDIR}/VerificarInstalacion.sh"
 	${VERIFICADIR} COM ${CONF}
 	if [ $? -eq 0 ]
 	then
 		#Si Iniciar_B ya fué ejecutado (por cada sesión de usuario) ir al paso FINAL - GRABA EN LOG
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10', '')"
+		log "I" "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
 		echo "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
 		echo ""
 		echo "Componentes Existentes:"
 		echo ""
 		if [ -n "$BINDIR" -a -d "$BINDIR" ]
 		then
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de instalación de los ejecutables: $BINDIR', '')"
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls $BINDIR`', '')"
+			log "I" "Directorio de instalación de los ejecutables: $BINDIR"
+			log "I" "`ls $BINDIR`"
 			echo "Directorio de instalación de los ejecutables: $BINDIR"
 			echo `ls $BINDIR`
 			echo ""
 		else
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'SE', '0', 'El directorio bindir: $BINDIR no existe', '')"
+			log "SE" "El directorio bindir: $BINDIR no existe"
 			echo "El directorio bindir: $BINDIR no existe"
 			return 1
 		fi
 		if [ -n "$MAEDIR" -a -d "$MAEDIR" ]
 		then
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de instalación de los archivos maestros: $MAEDIR', '')"
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls -lrt $MAEDIR`')"
+			log "I" "Directorio de instalación de los archivos maestros: $MAEDIR"
+			log "I" "`ls -lrt $MAEDIR`"
 			echo "Directorio de instalación de los archivos maestros: $MAEDIR"
 			echo `ls -lrt $MAEDIR`
 			echo ""
 		else
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'SE', '0', 'El directorio maedir: $MAEDIR no existe', '')"
+			log "SE" "El directorio maedir: $MAEDIR no existe"
 			echo "El directorio maedir: $MAEDIR no existe"
 			return 1
 		fi
@@ -178,44 +172,42 @@ function verificar_instalacion(){
 		
 		if [ -n "$FALTANTES" ]
 		then
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'SE', '0', 'Componentes faltantes: $FALTANTES', '')"
-			perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'SE', '0', 'Estado del Sistema: PENDIENTE DE INSTALACIÓN', '')"
+			log "SE" "Componentes faltantes: $FALTANTES"
+			log "SE" "Estado del Sistema: PENDIENTE DE INSTALACIÓN"
 			echo "Componentes faltantes: $FALTANTES"
 			echo "Estado del Sistema: PENDIENTE DE INSTALACIÓN"
 			return 1
 		fi
 	
 	fi
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Librería del Sistema: $CONF', '')"
+	log "I" "Librería del Sistema: $CONF"
 	echo "Librería del Sistema: $CONF"
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', '`ls -lrt $CONF`', '')"
+	log "I" "`ls -lrt $CONF`"
 	echo `ls -lrt $CONF`
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de arribo de archivos externos: $ARRIDIR', '')"
+	log "I" "Directorio de arribo de archivos externos: $ARRIDIR"
 	echo "Directorio de arribo de archivos externos: $ARRIDIR"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los archivos externos rechazados: $RECHDIR', '')"
+	log "I" "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
 	echo "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los logs de auditoria: $LOGDIR', '')" 
+	log "I" "Directorio de grabación de los logs de auditoria: $LOGDIR"
 	echo "Directorio de grabación de los logs de auditoria: $LOGDIR"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Directorio de grabación de los reportes de salida: $REPODIR', '')" 
+	log "I" "Directorio de grabación de los reportes de salida: $REPODIR"
 	echo "Directorio de grabación de los reportes de salida: $REPODIR"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'La extension de los archivos de log es: $LOGEXT', '')" 
+	log "I" "La extension de los archivos de log es: $LOGEXT"
 	echo "La extension de los archivos de log es: $LOGEXT"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'El tiempo de sleep del demonio es: $SLEEPTIME', '')" 
+	log "I" "El tiempo de sleep del demonio es: $SLEEPTIME"
 	echo "El tiempo de sleep del demonio es: $SLEEPTIME"
 	echo ""
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Estado del Sistema: INICIALIZADO', '')" 
+	log "I" "Estado del Sistema: INICIALIZADO"
 	echo "Estado del Sistema: INICIALIZADO"
 	return 0
 }
-
-function set_path()
-{
+function set_path(){
 	if [ -n "$BINDIR" ]
 	then
 		if [ ! `echo $PATH | grep $BINDIR` ]
@@ -238,11 +230,12 @@ function invocar_detectar(){
 		#echo "Puedo lanzar ./Recibir_B.sh"
 		./Recibir_B.sh &
 		LASTPID=$!
-		perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Demonio corriendo bajo el proceso Nro.: ${LASTPID}', '')"
+		log "I" "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
 		echo "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
 	fi
 	return 0
 }
+
 ########################MAIN########################
 verificar_configuracion
 if [ $? -eq 0 ]
@@ -284,7 +277,7 @@ fi
 
 if [ $ERRORCODE -eq 0 ]
 then
-	inicializar_log
+	log "I" "Comando Iniciar_B Inicio de Ejecución"
 	if [ $? -eq 0 ]
 	then
 		#echo "TO-DO: inicializar_log OK!!!"
@@ -354,7 +347,7 @@ fi
 
 if [ $ERRORCODE -eq 0 ]
 then
-	perl -I$BINDIR/functions -Mfunctions -e "functions::LoguearU('Iniciar_B', 'I', '0', 'Proceso de Inicialización concluido', '')"
+	log "I" "Proceso de Inicialización concluido"
 	echo "Proceso de Inicialización concluido"
 	echo "Entorno inicializado correctamente"
 fi

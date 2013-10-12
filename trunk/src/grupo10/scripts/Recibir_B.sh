@@ -4,7 +4,7 @@
 CONFDIR="/confdir/Instalar_TP.conf"
 BASEPATH=`echo $PWD | grep -o '.*grupo10'` 
 CONF="${BASEPATH}${CONFDIR}"
-
+log="$CONFDIR/Instalar_TP.log"
 COMMAND="Recibir_B"
 MSG_NUM=0
 
@@ -15,8 +15,8 @@ MAESALA="$MAEDIR/salas.mae"
 function log (){
 	#Loguea en el log correspondiente, con el formato correpondiente.
 	#Recibe el mensaje a loguear
-
-	perl -I$BINDIR/functions -Mfunctions -e "functions::Grabar_L('$COMMAND', '$2', $MSG_NUM, '$1', '')"
+	
+	perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('$COMMAND', '$2', '$1', '$log')"
 }
 
 function verificar_inicializacion_ambiente()
