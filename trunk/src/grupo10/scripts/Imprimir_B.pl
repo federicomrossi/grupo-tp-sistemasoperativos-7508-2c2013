@@ -1,13 +1,53 @@
-#!/usr/bin/perl
+# #############################################################################
+# Trabajo práctico N°1
+# Grupo 10
+# 75.08 - Sistemas Operativos
+# Facultad de Ingeniería
+# Universidad de Buenos Aires
+# #############################################################################
+#
+# FUNCIÓN IMPRIMIR_B
+# 
+# Comando que se encarga de ...
+#
+#
+# Parámetros
+# ##########
+#
+#
+# Códigos de retorno
+# ##################
+#
+# 0: La acción se llevó a cabo con éxito;
+# 1: 
+#
+
+
+#!/usr/bin/perl 
+use warnings;
 use Getopt::Std;
+
+require 'libs/lib_utilities.pl';
 
 
 ################################## HARDCODEO
 
 $PROCDIR = "../procesados/";
 $RESERVASOK = "reservas.ok";
+$RANK_SALIDA_ARCHIVO = "./";
 
 ################################## END HARDCODEO
+
+
+
+### CONFIGURACIÓN
+
+# Cantidad total de puestos en el ranking
+$RANK_CANT_PUESTOS = 10;
+$RANK_NOMBRE_ARCHIVO = "ranking";
+
+### FIN CONFIGURACION
+
 
 
 
@@ -80,22 +120,113 @@ sub disponibilidad{
 }
 
 
-# [ Insertar documentación aquí ]
+# Subrutina que se encarga de mostrar el ranking de los diez principales
+# solicitantes de reservas. Este imprime por pantalla el ranking, y de ser
+# especificado, también lo imprimira sobre un archivo de salida ranking.nnn.
+# PRE: el único parámetro se refiere a si se desea grabar en un archivo el
+# ranking. De ser deseado este comportamiento, debe pasarse un valor distinto
+# de cero como parámetro o cero en su defecto.
+# POST: Si se ha especificado grabar en un archivo este se llamará ranking.nnn
+# siendo nnn un número de tres dígitos que evita sobreescribir rankings
+# antiguos.
+# CODIGOS DE ERROR:
+#	0: Se efectuó la operación con éxito;
+#	1: El archivo de reservas no pudo ser abierto;
+#	2: No se pudo generar el archivo de rankings. Cantidad de rankings máxima;
+#	3: El archivo de rankings a generar no pudo ser creado.
 sub rankingDeSolicitantes {
 
-	# Hash con solicitantes mas rankeados
-	%rank = ();
+	# Leemos valores de los argumentos
+	$correspondeImprimir = $_[0];
 
+	# Array con solicitantes mas rankeados
+	my @rank = ();
 
-	open FILE, "$PROCDIR$RESERVASOK" or die $!;
-	my $lineno = 1;
-	
-	while (<FILE>) {
-		print $lineno++;
-		print ": $_";
+	# Hash con emails de solicitantes y sus solicitudes
+	my %solicitudes = ();
+
+	# Abrimos el archivo de reservas
+	open FILE, "$PROCDIR$RESERVASOK" or return 1;
+
+	# Iteramos sobre las líneas del archivo
+	while(<FILE>)
+	{
+		# Levantar los campos email y cantidad de butacas solicitadas
+		@dataLinea = split(";", $_);
+		$email_solicitante = $dataLinea[10];
+		$cant_butacas_solicitadas = $dataLinea[9];
+
+		# Contabilizamos la reserva
+		$solicitudes{$email_solicitante} += $cant_butacas_solicitadas;
 	}
 
+	close(FILE);
+
+
+	# Procesamos cada solicitante para armar el ranking
+	for(keys %solicitudes) {
+		# Insertamos par en array
+		push(@rank, $_, [$solicitudes{$_}]);
+
+		# Ordenamos el array
+		@rank = sort {$a->[1] cmp $b->[1]} @rank;
+
+		# Si hay mas de los que necesitamos en el ranking, quitamos el menor
+		if((scalar @rank) > $RANK_CANT_PUESTOS) {
+			shift(@rank);
+		}
+	}
+
+
+	# Escribimos sobre un archivo de ser necesario
+	if($correspondeImprimir)
+	{
+		$cantRepetidos = 1;
+
+		# Contabilizamos la cantidad de archivos con el mismo nombre
+		foreach(grep(/^($RANK_NOMBRE_ARCHIVO).(\d){3}$/, 
+			readdir($RANK_SALIDA_ARCHIVO)))
+		{
+			$cantRepetidos += 1;
+		}
+
+		# Si la cantidad de digitos supera el máximo de 999 rankings
+		# retornamos error.
+		if($cantRepetidos >= 999) {
+			return 2;
+		}
+
+		# Armamos nombre para el archivo de ranking
+		$nombreArchivo = $RANK_SALIDA_ARCHIVO.$RANK_NOMBRE_ARCHIVO.
+			numberPadding($cantRepetidos, 3);
+
+		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
+
+		# Escribimos encabezados
+		print FILEHANDLER "Ranking de 10 principales solicitantes de reservas.\n\n\n";
+		print FILEHANDLER "CORREO ELECTRÓNICO\t\t\tCANTIDAD\n\n";
+
+		# Imprimimos el ranking
+		for($i = ((scalar @rank) - 1); $i >= 0; $i--) {
+			print FILEHANDLER "@rank->[$i]->[0]\t\t\t\t\t@rank->[$i]->[1]\n";
+		}
+
+		close(FILEHANDLER);
+	}
+
+
+	# Imprimimos por pantalla el ranking
+	print "Ranking de 10 principales solicitantes de reservas.\n\n\n";
+	print "CORREO ELECTRÓNICO\t\t\tCANTIDAD\n\n";
+
+	for($i = ((scalar @rank) - 1); $i >= 0; $i--) {
+		print "@rank->[$i]->[0]\t\t\t\t\t@rank->[$i]->[1]\n";
+	}
+
+	return 0;
 }
+
+
 
 
 
