@@ -33,9 +33,24 @@
 # Constantes
 readonly INVALIDO=1
 readonly VALIDO=0
+# Constante que representa caracteres ascii salvo el delimitador ';'
+readonly ASCII_SIN_PC="[\x00-\x3A|\x3C-\x7F]"
+# Constante que representa caracteres ascii salvo el delimitador '-'
+readonly ASCII_SIN_G="[\x00-\x2C|\x2E-\x7F]"
+# Constante que representa caracteres ascii y no ascii, salvo el delimitador ';'
+readonly CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]"
+# Constante que representa caracteres ascii y no ascii, salvo el delimitador '-'
+readonly CHAR_SIN_G="[\x00-\x2C|\x2E-\xFF]"
+# Constante que representa caracteres ascii y no ascii, salvo el delimitador '.'
+readonly CHAR_SIN_P="[\x00-\x2D|\x2F-\xFF]"
+# Constante que representa caracteres ascii y no ascii, salvo los char ';' y '/'
+readonly CHAR_SIN_PCyB="[\x00-\x2E|\x30-\x3A|\x3C-\xFF]"
+# Constante que representa caracteres ascii y no ascii, salvo los char ';' y ':'
+readonly CHAR_SIN_PCyDP="[\x00-\x39|\x3C-\xFF]"
+
 # DEBUG: Deben cambiar
 readonly LOG_PATH="../log/Reservar_B.log"
-SCRIPTS="./"
+readonly SCRIPTS="./"
 
 # Funcion que escribe en el log
 # Recibe como parametros: 1- Tipo de mensaje, 2- Mensaje
@@ -49,7 +64,7 @@ function log (){
 # Recibe como parametro: 1- El nombre del archivo.
 function validarDuplicados() {
 	# Se obtiene el nombre del archivo sin la extension de repeticion
-	local nombre_sin_duplicado=`echo $1 | grep "^\([0-9]\+-[^-]\+-[^-\.]\+\)"`
+	local nombre_sin_duplicado=`echo $1 | grep -P "^[0-9]+-$CHAR_SIN_G+-$CHAR_SIN_P+"`
 
 	# Si existe en $PROCDIR se descarta
 	if [ -a "$PROCDIR/$nombre_sin_duplicado" ]; then
@@ -96,7 +111,8 @@ function archivoValido() {
 	fi
 
 	# Sino, se analiza que los campos obligatorios esten presentes
-	ret_val_AV=`grep -c -v "^[^;]*;[^;/]\+/[^;/]\+/[^;/]\+;[^;:]\+:[^;:]\+;[^;]*;[^;]*;[0-9]\+;[^;]*$" "$ACEPDIR$1"`
+	# ret_val_AV=`grep -c -v "^[^;]*;[^;/]\+/[^;/]\+/[^;/]\+;[^;:]\+:[^;:]\+;[^;]*;[^;]*;[0-9]\+;[^;]*$" "$ACEPDIR$1"`
+	ret_val_AV=`grep -c -v -P "^$CHAR_SIN_PC*;$CHAR_SIN_PCyB+/$CHAR_SIN_PCyB+/$CHAR_SIN_PC+;$CHAR_SIN_PCyDP+:$CHAR_SIN_PC+;$CHAR_SIN_PC*;$CHAR_SIN_PC*;[0-9]+;$CHAR_SIN_PC*$" "$ACEPDIR$1"`
 	
 	# Si hay 1 o mas lineas invalidas, entonces se rechaza el archivo completo
 	if [ "$ret_val_AV" != "0" ]; then
@@ -235,7 +251,8 @@ function procesarArchivo() {
 		else
 			# Si no existe un registro en la tabla, se levanta del archivo la disponibilidad correspondiente
 			# butacas_disponibles=`grep "^C\?$id_combo;[^;]\+;[^;]\+;[^;]\+;[^;]\+;[^;]\+;[^;]\+;[^;]\+$" "$PROCDIR/combos.dis"`
-			butacas_disponibles=`grep "^C\?$id_combo" "$PROCDIR/combos.dis"`
+			butacas_disponibles=`grep -P "^C?$id_combo;[0-9]+;$CHAR_SIN_PC+;$CHAR_SIN_PC+;[0-9]+;[0-9]+;[0-9]+;$CHAR_SIN_PC+$" "$PROCDIR/combos.dis"`
+			# butacas_disponibles=`grep "^C\?$id_combo" "$PROCDIR/combos.dis"`
 
 			butacas_disponibles=`echo $butacas_disponibles | cut -d ';' -f "7"`
 
@@ -349,10 +366,10 @@ function aceptarReserva() {
 	local usuario=`id -u -n`
 
 	# Se obtiene la informacion que resta
-	local nombre_obra=`grep "$id_obra\(;[^;]\+\)\{3\}" "$MAEDIR/obras.mae"`
+	local nombre_obra=`grep -P "^$id_obra" "$MAEDIR/obras.mae"`
 	nombre_obra=`echo $nombre_obra | cut -d ';' -f "2"`
 
-	local nombre_sala=`grep "$id_sala\(;[^;]\+\)\{5\}" "$MAEDIR/obras.mae"`
+	local nombre_sala=`grep -P "^$id_sala" "$MAEDIR/obras.mae"`
 	nombre_sala=`echo $nombre_sala | cut -d ';' -f "2"`
 
 	# Se arma el registro
@@ -480,10 +497,10 @@ function validarEvento() {
 	# Si se trata de un ID par, la clave es el ID Sala. Sino, se trata de un ID Obra.
 	if [ $(( $id_evento % 2 )) == "0" ]; then
 		# Es un ID Sala
-		combo_evento=`grep "C\?[0-9]\+;[0-9]\+;$fecha_evento;$hora_evento;$id_evento;[0-9]\+;[0-9]\+;[[:alnum:]]\+" "$PROCDIR/combos.dis"`
+		combo_evento=`grep -P "C?[0-9]+;[0-9]+;$fecha_evento;$hora_evento;$id_evento;[0-9]+;[0-9]+;$CHAR_SIN_PC+" "$PROCDIR/combos.dis"`
 	else
 		# Es un ID Obra
-		combo_evento=`grep "C\?[0-9]\+;$id_evento;$fecha_evento;$hora_evento;[0-9]\+;[0-9]\+;[0-9]\+;[[:alnum:]]\+" "$PROCDIR/combos.dis"`
+		combo_evento=`grep -P "C?[0-9]+;$id_evento;$fecha_evento;$hora_evento;[0-9]+;[0-9]+;[0-9]+;$CHAR_SIN_PC+" "$PROCDIR/combos.dis"`
 	fi
 
 	# Si el evento no es valido, se rechaza la reserva
