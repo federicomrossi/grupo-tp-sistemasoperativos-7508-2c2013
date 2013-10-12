@@ -502,9 +502,6 @@ function guardarDisponibilidades() {
 	# Se guarda la cantidad de elementos en la tabla
 	local id_c=0
 
-	echo "------------> Estoy grabando disponibilidades" >> "./log/log_errores"
-	echo "Hay ${!disponibilidades[@]} en claves y ${disponibilidades[@]} en valores" >> "./log/log_errores"
-
 	# Para cada elemento, se lo busca en el archivo y se lo actualiza
 	for id_c in ${!disponibilidades[*]}; do
 
