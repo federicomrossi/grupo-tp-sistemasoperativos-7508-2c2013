@@ -34,7 +34,7 @@
 readonly INVALIDO=1
 readonly VALIDO=0
 # DEBUG: Deben cambiar
-readonly LOG_PATH="./debug/log/Reservar_B.log"
+readonly LOG_PATH="../log/Reservar_B.log"
 SCRIPTS="./"
 
 # Funcion que escribe en el log
@@ -520,10 +520,10 @@ function guardarDisponibilidades() {
 
 
 # DEBUG: Por ahora el path de la carpeta arribos se define 
-ACEPDIR="./debug/aceptados/"
-PROCDIR="./debug/procesados/"
+ACEPDIR="../aceptados/"
+PROCDIR="../procesados/"
 MAEDIR="../mae/"
-RECHDIR="./debug/rechazados/"
+RECHDIR="../rechazados/"
 
 # Variables
 cant_elementos=0
