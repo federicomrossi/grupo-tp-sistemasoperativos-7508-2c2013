@@ -23,6 +23,7 @@ LOGDIR="$GRUPO/log"
 LOGEXT=".log"
 LOGSIZE=409600 # 400 Kbytes
 DATASIZE=100
+SLEEPTIME=5
 
 
 log (){
@@ -51,6 +52,7 @@ cargar_config () {
 			LOGEXT) LOGEXT=$valor ;;
 			LOGSIZE) LOGSIZE=$valor ;;
 			DATASIZE) DATASIZE=$valor ;;
+			SLEEPTIME) SLEEPTIME=$valor ;;
 			esac
 			
 		done < $conf
@@ -467,6 +469,7 @@ instalar () {
 	linea="LOGEXT=${LOGEXT}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="LOGSIZE=${LOGSIZE}=${user}=${date}" ; echo "$linea" >> $conf
 	linea="DATASIZE=${DATASIZE}=${user}=${date}" ; echo "$linea" >> $conf
+	linea="SLEEPTIME=${SLEEPTIME}=${user}=${date}" ; echo "$linea" >> $conf
 	linea=""
 	
 	log "I" "Instalacion CONCLUIDA"
