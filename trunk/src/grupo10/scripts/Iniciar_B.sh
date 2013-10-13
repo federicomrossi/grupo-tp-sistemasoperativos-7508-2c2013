@@ -48,33 +48,6 @@ function verificar_ejecucion_anterior(){
 		log "I" "El tiempo de sleep del demonio es: $SLEEPTIME"
 		log "I" "Estado del Sistema: INICIALIZADO"
 		log "A" "No es posible efectual una reinicializacion del sistema."
-
-		echo "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
-		echo ""
-		echo "Librería del Sistema: $CONF"
-		echo `ls -lrt $CONF`
-		echo ""
-		echo "Directorio de instalación de los ejecutables: $BINDIR"
-		echo `ls $BINDIR`
-		echo ""
-		echo "Directorio de instalación de los archivos maestros: $MAEDIR"
-		echo `ls -lrt $MAEDIR`
-		echo ""
-		echo "Directorio de arribo de archivos externos: $ARRIDIR"
-		echo ""
-		echo "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
-		echo ""
-		echo "Directorio de grabación de los logs de auditoria: $LOGDIR"
-		echo ""
-		echo "Directorio de grabación de los reportes de salida: $REPODIR"
-		echo ""
-		echo "La extension de los archivos de log es: $LOGEXT"
-		echo ""
-		echo "El tiempo de sleep del demonio es: $SLEEPTIME"
-		echo ""
-		echo "Estado del Sistema: INICIALIZADO"
-		echo ""
-		echo "No es posible efectual una reinicializacion del sistema."
 		return 1
 	else
 		return 0
@@ -99,7 +72,9 @@ function set_variables(){
     return 0
 }
 function log (){
-	perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
+	echo "$2"
+
+	#perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
 	return 0	
 }
 function verificar_instalacion(){
@@ -109,32 +84,24 @@ function verificar_instalacion(){
 	then
 		#Si Iniciar_B ya fué ejecutado (por cada sesión de usuario) ir al paso FINAL - GRABA EN LOG
 		log "I" "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
-		echo "TP SO7508 2do cuatrimestre 2013. Tema B Copyright © Grupo 10"
-		echo ""
 		echo "Componentes Existentes:"
 		echo ""
 		if [ -n "$BINDIR" -a -d "$BINDIR" ]
 		then
 			log "I" "Directorio de instalación de los ejecutables: $BINDIR"
 			log "I" "`ls $BINDIR`"
-			echo "Directorio de instalación de los ejecutables: $BINDIR"
-			echo `ls $BINDIR`
 			echo ""
 		else
 			log "SE" "El directorio bindir: $BINDIR no existe"
-			echo "El directorio bindir: $BINDIR no existe"
 			return 1
 		fi
 		if [ -n "$MAEDIR" -a -d "$MAEDIR" ]
 		then
 			log "I" "Directorio de instalación de los archivos maestros: $MAEDIR"
 			log "I" "`ls -lrt $MAEDIR`"
-			echo "Directorio de instalación de los archivos maestros: $MAEDIR"
-			echo `ls -lrt $MAEDIR`
 			echo ""
 		else
 			log "SE" "El directorio maedir: $MAEDIR no existe"
-			echo "El directorio maedir: $MAEDIR no existe"
 			return 1
 		fi
 		#TO-DO: armar lista de pendientes
@@ -174,37 +141,19 @@ function verificar_instalacion(){
 		then
 			log "SE" "Componentes faltantes: $FALTANTES"
 			log "SE" "Estado del Sistema: PENDIENTE DE INSTALACIÓN"
-			echo "Componentes faltantes: $FALTANTES"
-			echo "Estado del Sistema: PENDIENTE DE INSTALACIÓN"
 			return 1
 		fi
 	
 	fi
 	log "I" "Librería del Sistema: $CONF"
-	echo "Librería del Sistema: $CONF"
 	log "I" "`ls -lrt $CONF`"
-	echo `ls -lrt $CONF`
-	echo ""
 	log "I" "Directorio de arribo de archivos externos: $ARRIDIR"
-	echo "Directorio de arribo de archivos externos: $ARRIDIR"
-	echo ""
 	log "I" "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
-	echo "Directorio de grabación de los archivos externos rechazados: $RECHDIR"
-	echo ""
 	log "I" "Directorio de grabación de los logs de auditoria: $LOGDIR"
-	echo "Directorio de grabación de los logs de auditoria: $LOGDIR"
-	echo ""
 	log "I" "Directorio de grabación de los reportes de salida: $REPODIR"
-	echo "Directorio de grabación de los reportes de salida: $REPODIR"
-	echo ""
 	log "I" "La extension de los archivos de log es: $LOGEXT"
-	echo "La extension de los archivos de log es: $LOGEXT"
-	echo ""
 	log "I" "El tiempo de sleep del demonio es: $SLEEPTIME"
-	echo "El tiempo de sleep del demonio es: $SLEEPTIME"
-	echo ""
 	log "I" "Estado del Sistema: INICIALIZADO"
-	echo "Estado del Sistema: INICIALIZADO"
 	return 0
 }
 function set_path(){
@@ -231,7 +180,6 @@ function invocar_detectar(){
 		./Recibir_B.sh &
 		LASTPID=$!
 		log "I" "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
-		echo "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
 	fi
 	return 0
 }
@@ -348,7 +296,6 @@ fi
 if [ $ERRORCODE -eq 0 ]
 then
 	log "I" "Proceso de Inicialización concluido"
-	echo "Proceso de Inicialización concluido"
 	echo "Entorno inicializado correctamente"
 fi
 #########################FIN########################
