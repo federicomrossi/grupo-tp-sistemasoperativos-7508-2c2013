@@ -9,7 +9,7 @@
 COPY_W="TP SO7508 Segundo Cuatrimestre 2013. Tema B Copyright © Grupo 10"
 GRUPO=`pwd`
 CONFDIR="$GRUPO/confdir"
-SCRIPTS="$GRUPO/scripts"
+TEMPBIN="$GRUPO/.tmp/bin"
 log="$CONFDIR/Instalar_TP.log"
 conf="$CONFDIR/Instalar_TP.conf"
 BINDIR="$GRUPO/bin"
@@ -26,7 +26,7 @@ DATASIZE=100
 
 
 log (){
-	perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Instalar_TP', '$1', '$2', '$log')"
+	perl -I$TEMPBIN -Mfunctions -e "functions::Grabar_L('Instalar_TP', '$1', '$2', '$log')"
 	echo " $2"	
 }
 
@@ -348,14 +348,13 @@ error_al_instalar () {
 }
 
 limpiar_archivos_de_instalacion () {
-#	if [ -d "${GRUPO}/.tmp" ]
-#	then 
-#		log "I" "Eliminando archivos de instalación"
-#		`rm ${GRUPO}/.tmp/*/*`
-#		`rmdir ${GRUPO}/.tmp/*`
-#		`rmdir ${GRUPO}/.tmp`
-#	fi
-	echo "limpiando"
+	if [ -d "${GRUPO}/.tmp" ]
+	then 
+		log "I" "Eliminando archivos de instalación"
+		`rm ${GRUPO}/.tmp/*/*`
+		`rmdir ${GRUPO}/.tmp/*`
+		`rmdir ${GRUPO}/.tmp`
+	fi
 }
 
 instalar () {
@@ -469,10 +468,9 @@ instalar () {
 	linea="DATASIZE=${DATASIZE}=${user}=${date}" ; echo "$linea" >> $conf
 	linea=""
 	
-	limpiar_archivos_de_instalacion
-	
 	log "I" "Instalacion CONCLUIDA"
 
+	limpiar_archivos_de_instalacion
 }
 
 
