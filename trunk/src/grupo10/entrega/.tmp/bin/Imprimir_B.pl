@@ -27,7 +27,7 @@
 use warnings;
 use Getopt::Std;
 
-require 'libs/lib_utilities.pl';
+require 'lib_utilities.pl';
 
 
 ################################## HARDCODEO
@@ -44,7 +44,11 @@ $REPODIR = "./";
 
 # Cantidad total de puestos en el ranking
 $RANK_CANT_PUESTOS = 10;
+# Nombre de archivo para el ranking
 $RANK_NOMBRE_ARCHIVO = "ranking";
+
+# Extensión para el archivo de tickets
+$TICKET_EXT_ARCHIVO = ".tck";
 
 ### FIN CONFIGURACION
 
@@ -91,7 +95,7 @@ $errorRepeticion = "
 -> Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 
-sub disponibilidad{
+sub disponibilidad {
 
 	# $string = "The time is: 12:31:02 on 4/12/00";
 	# print "$string\n";
@@ -233,6 +237,100 @@ sub rankingDeSolicitantes {
 
 
 
+# Subrutina que se encarga de generar los tickets. Esto lo realiza solicitando
+# al usuario que ingrese un ID del Combo para el cual desea generar los tickets
+# a través de la entrada estandar. De no encontrarse el ID del combo se volverá
+# a solicitar hasta validar la existencia del mismo.
+# POST: se genera un archivo cuyo nombre será ID_DEL_COMBO.tck y donde sus
+# sus registros poseeran como primer campo el Tipo de comprobante y los
+# restantes poseen la información de la obra y el solicitante.
+sub listadoDeTickets {
+
+	my @reservas = ();
+
+	# Solicitamos al usuario el ID del Combo
+	print "Por favor ingrese el ID del Combo: ";
+	$idCombo = <STDIN>;
+	chomp($idCombo);
+
+	$laClaveNoExiste = 1;
+
+	while($laClaveNoExiste > 0)
+	{
+		# Abrimos el archivo de reservas
+		open FILE, "$PROCDIR$RESERVASOK" or return 1;
+
+		# Iteramos sobre las líneas del archivo
+		while(<FILE>)
+		{
+			@dataLinea = split(";", $_);
+
+			if(lc($idCombo) eq lc($dataLinea[7]))
+			{
+				# Insertamos linea en array
+				push(@reservas, [$dataLinea[9], join(";", $dataLinea[1], 
+					$dataLinea[2], $dataLinea[3], $dataLinea[5], 
+					$dataLinea[8], $dataLinea[10])]);
+			}
+		}
+
+		close(FILE);
+
+		# Si se encontraron registros con el id del combo, salimos del bucle
+		if((scalar @reservas) > 0) { 
+			$laClaveNoExiste = 0; 
+		}
+		else {
+			# Volvemos a solicitar un número de ID del combo
+			print "El ID ingresado no existe. Por favor vuelva a ingresar otro ID del Combo: ";
+
+			$idCombo = <STDIN>;
+			chomp($idCombo);
+		}
+	}
+
+
+	# Generamos el archivo de tickets
+	$nombreArchivo = $REPODIR.$idCombo.$TICKET_EXT_ARCHIVO;
+
+	open(FILEHANDLER, "+>$nombreArchivo") or return 3;
+
+	for($i = 0; $i < (scalar @reservas); $i++) {
+		
+		# Caso en que la reserva no cuenta con confirmaciones
+		if($reservas[$i][0] == 0){
+			next;
+		}
+		# Caso en que la reserva cuenta con una sola confirmacion
+		elsif($reservas[$i][0] == 1) {
+			print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+		}
+		# Caso en que la reserva cuenta con dos confirmaciones
+		elsif($reservas[$i][0] == 2) {
+			print FILEHANDLER "VALE POR 2 ENTRADA;$reservas[$i][1]\n";
+		}
+		# Caso en que la reserva cuenta con mas de dos confirmaciones
+		elsif($reservas[$i][0] > 2) {
+
+			# Imprimimos para dos entradas
+			for($k = 0; $k < int($reservas[$i][0] / 2); $k++){
+				print FILEHANDLER "VALE POR 2 ENTRADA;$reservas[$i][1]\n";
+			}
+
+			# Si queda un remamente de una entrada para completar, lo
+			# generamos como un vale para una entrada.
+			if(int($reservas[$i][0] % 2) > 0) {
+				print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+			}
+		}
+	}
+
+	close(FILEHANDLER); 
+}
+
+
+
+
 
 
 # ############################# #
@@ -288,7 +386,7 @@ if($ok) {
 			}
 		}
 		elsif (exists $Opciones{'t'}) {
-			print "Elegi t \n"; 
+			listadoDeTickets();
 		}
 		else {
 			# Se ingreso la opcion -w en conjunto con la opcion -a
