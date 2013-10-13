@@ -248,10 +248,6 @@ sub truncate_file
 
 sub grabarSiCorresponde
 {
-    #Debug
-    my $LOG_MOVER_B = "../log/Mover_B.log";
-    ##
-
     my $comando = $_[0];
     my $origen = $_[1];
     my $destino = $_[2];
@@ -261,17 +257,17 @@ sub grabarSiCorresponde
         if($resOperacion == 1)
         {
             # No se pudo mover porque el directorio origen no existe
-            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio origen ($origen) no existe.", $LOG_MOVER_B);
+            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio origen ($origen) no existe.");
             return;
         }
         elsif($resOperacion == 2)
         {
             # No se pudo mover el archivo porque el destino no existe
-            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio destino ($destino) no existe.", $LOG_MOVER_B);
+            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio destino ($destino) no existe.");
             return;
         }
         # Si salio bien, se guarda un mensaje informativo
-        Grabar_L("Mover_B", "I", "El archivo $origen se movió correctamente a $destino.", $LOG_MOVER_B);
+        Grabar_L("Mover_B", "I", "El archivo $origen se movió correctamente a $destino.");
     }
 }
 
@@ -281,7 +277,7 @@ sub Mover_B
     use warnings;
     use File::Copy 'move';
 
-    require 'libs/lib_utilities.pl';
+    require './lib_utilities.pl';
     # Almacenamos parámetros de entrada
     my $origen = $_[0];
     my $destino = $_[1];

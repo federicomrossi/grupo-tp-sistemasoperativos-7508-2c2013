@@ -7,7 +7,6 @@
 MSG_TYPE="Test"
 MSG_NUM=0
 MSG_TEXT="Mensaje de Log"
-log="$LOGDIR/Iniciar_B.log"
 ########################VARIABLES########################
 CONFDIR="/confdir/Instalar_TP.conf"
 BASEPATH=`echo $PWD | grep -o '.*grupo10'` 
@@ -76,14 +75,13 @@ function set_variables(){
 			 export $VARIABLE="$VALOR"
 		fi
 	done<$CONF
-
 	FILE="${LOGDIR}/archivo${LOGEXT}"
     return 0
 }
 function log (){
 	echo "$2"
 
-	perl -I$BINDIR -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
+	perl -I$BINDIR -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2')"
 	return 0	
 }
 function verificar_instalacion(){
@@ -180,21 +178,16 @@ function set_path(){
 	return 0
 }
 function invocar_detectar(){
-	#Siempre que Recibir_B.sh no este ejecutando, lanzar. Verificar con comando ps - GRABA EN LOG
-	#Sino - GRABA EN LOG
-	# q=`ps -ef | grep -v grep | grep '[.]/Recibir_B.sh' | wc -l`
-	# if [ $q -eq 0 ]
-	# then
-	# 	#echo "Puedo lanzar ./R&ecibir_B.sh"
-	# 	./Recibir_B.sh &
-	# 	LASTPID=$!
-	# 	log "I" "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
-	# fi
 	Start_D.sh
 	return 0
 }
 
+function otorgarPermisoEjecucion(){
+    chmod -R 777 $BASEPATH
+}
+
 ########################MAIN########################
+otorgarPermisoEjecucion
 verificar_configuracion
 if [ $? -eq 0 ]
 then
@@ -229,19 +222,6 @@ then
 		ERRORCODE=0
 	else
 		#echo "TO-DO: set_variables ERROR!!!"
-		ERRORCODE=1
-	fi
-fi
-
-if [ $ERRORCODE -eq 0 ]
-then
-	log "I" "Comando Iniciar_B Inicio de Ejecución"
-	if [ $? -eq 0 ]
-	then
-		#echo "TO-DO: inicializar_log OK!!!"
-		ERRORCODE=0
-	else
-		#echo "TO-DO: inicializar_log ERROR!!!"
 		ERRORCODE=1
 	fi
 fi
@@ -287,10 +267,8 @@ then
 	
 	if [ $Decision == "S" -o $Decision == "s" ]
 	then
-		echo "invocar_Detectar"
 		invocar_detectar
 		var=$?
-		echo $var
 		if [ $var -eq 0 ]
 		then
 			#echo "TO-DO: invocar_detectar OK!!!"
