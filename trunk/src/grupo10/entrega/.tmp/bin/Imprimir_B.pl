@@ -307,14 +307,14 @@ sub listadoDeTickets {
 		}
 		# Caso en que la reserva cuenta con dos confirmaciones
 		elsif($reservas[$i][0] == 2) {
-			print FILEHANDLER "VALE POR 2 ENTRADA;$reservas[$i][1]\n";
+			print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
 		}
 		# Caso en que la reserva cuenta con mas de dos confirmaciones
 		elsif($reservas[$i][0] > 2) {
 
 			# Imprimimos para dos entradas
 			for($k = 0; $k < int($reservas[$i][0] / 2); $k++){
-				print FILEHANDLER "VALE POR 2 ENTRADA;$reservas[$i][1]\n";
+				print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
 			}
 
 			# Si queda un remamente de una entrada para completar, lo
