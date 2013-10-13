@@ -23,7 +23,7 @@ LOGDIR="$GRUPO/log"
 LOGEXT=".log"
 LOGSIZE=409600 # 400 Kbytes
 DATASIZE=100
-SLEEPTIME=5
+SLEEPTIME=1000
 
 
 log (){
@@ -142,14 +142,14 @@ leer_opcion_si_no () {
 }
 
 log_perl_no_instalado () {
-	log E $COPY_W
+	log E "$COPY_W"
 	log E "Para instalar el TP es necesario contar con  Perl 5 o superior instalado. Efectúe su instalación e inténtelo nuevamente."
 	log E "Proceso de Instalación Cancelado"
 }
 
 
 log_perl_instalado () {
-	log E $COPY_W
+	log E "$COPY_W"
 	log E "Perl Version: $1"
 }
 
@@ -157,13 +157,12 @@ detectar_perl (){
 	#perl --version
 	# TODO ver si se puede obtenter la version de pearl y chequear
 	version_perl=` perl --version | grep '^This is perl .*' | sed 's/^This is perl \(.\).*$/\1/g'`
-	
-	if [ $version_perl<5 ]
+	if [ $version_perl != 5 -a $version_perl != 6  ]
 	then
 		log_perl_no_instalado
 		exit 0
 	else
-		log_perl_instalado $version_perl 		
+		log_perl_instalado "$version_perl" 		
 	fi
 }
 
@@ -251,7 +250,6 @@ def_espacio_libre_min (){
 	while [ $espacio_ok != 1 ]
 	do
 		mensaje="Defina el espacio mínimo libre para el arribo de archivos externos en Mbytes. Máximo ${espacio_disponible} Mbytes (entrar para default: $DATASIZE): "
-		log -l "I" "0" "$mensaje"
 		read -p "$mensaje" opcion
 
 		#Valido que sea numerico y distinto de cero
@@ -297,7 +295,6 @@ def_espacio_libre_min (){
 
 def_extension_log (){
 	mensaje="Ingrese la extensión para los archivos de log (entrar para default: $LOGEXT): "
-	log "I" "$mensaje"
 	read -p "$mensaje" opcion
 	if [ "$opcion" != "" ]
 	then
@@ -310,7 +307,6 @@ def_extension_log (){
 
 def_tam_log (){
 	mensaje="Defina el tamaño máximo para los archivos $LOGEXT en Kbytes (entrar para default: $((${LOGSIZE}/1024))): "
-	log "I" "$mensaje"
 	read -p "$mensaje" opcion
 
 	validar_valor_numerico $opcion
@@ -363,7 +359,6 @@ limpiar_archivos_de_instalacion () {
 instalar () {
 	
 	##Confirmar Inicio de Instalación
-	log "I" "Iniciando instalación. Está usted seguro? (Si-No): "
 	leer_opcion_si_no  "Iniciando instalación. Desea continuar? (Si-No): "
 	if [ $? == 0 ]
 	then
@@ -680,7 +675,6 @@ do
 
 	mensaje_dir_instalacion
 
-	log "I" "Los datos ingresados son correctos? (Si-No): "
 	leer_opcion_si_no "Los datos ingresados son correctos? (Si-No): "
 	if [ $? == 1 ]
 	then 
