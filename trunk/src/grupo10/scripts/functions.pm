@@ -35,7 +35,7 @@ sub Grabar_L
 	if ( $params[3]){
 		# El log se escribe en un archivo distinto al por defecto
 		$log_full_file_path = $params[3];
-        print $log_full_file_path;
+        #print $log_full_file_path;
 	} else {
             $log_dir = get_log_dir();
             $log_file_ext = get_log_extension();
