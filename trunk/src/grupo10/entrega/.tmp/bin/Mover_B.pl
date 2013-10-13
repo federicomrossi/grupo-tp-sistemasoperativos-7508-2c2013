@@ -38,7 +38,7 @@
 use warnings;
 use File::Copy 'move';
 
-require 'libs/lib_utilities.pl';
+require './lib_utilities.pl';
 
 
 

@@ -27,7 +27,7 @@
 use warnings;
 use Getopt::Std;
 
-require 'libs/lib_utilities.pl';
+require './lib_utilities.pl';
 
 
 ################################## HARDCODEO
