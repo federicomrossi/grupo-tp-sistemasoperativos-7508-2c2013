@@ -50,8 +50,6 @@ MAE (){
 			fi
 	#	fi
 
-	#done <$1
-	
 	return $codigo_err
 }
 
