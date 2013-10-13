@@ -27,7 +27,7 @@
 use warnings;
 use Getopt::Std;
 
-require './lib_utilities.pl';
+require 'libs/lib_utilities.pl';
 
 
 ################################## HARDCODEO
@@ -107,7 +107,7 @@ sub disponibilidad{
 	# Lee una linea
 	$linea = <COMBOS>;
 
-	while ($linea != null) {
+	while ($linea != undef) {
 		# Compara con el formato buscado, si es, lo imprime
 		if ($linea =~ m[(\d+;2;(\d+)\/(\d+)\/(\d+);(\d+):(\d+);\d+;\d+;\d+);\w+])	{
 			$linea = $1;
@@ -154,7 +154,7 @@ sub rankingDeSolicitantes {
 		# Levantar los campos email y cantidad de butacas solicitadas
 		@dataLinea = split(";", $_);
 		$email_solicitante = $dataLinea[10];
-		$cant_butacas_solicitadas = $dataLinea[9];
+		$cant_butacas_solicitadas = $dataLinea[9] * 1;
 
 		# Contabilizamos la reserva
 		$solicitudes{$email_solicitante} += $cant_butacas_solicitadas;
@@ -164,12 +164,13 @@ sub rankingDeSolicitantes {
 
 
 	# Procesamos cada solicitante para armar el ranking
-	for(keys %solicitudes) {
+	for(keys %solicitudes)
+	{
 		# Insertamos par en array
-		push(@rank, $_, [$solicitudes{$_}]);
+		push(@rank, [$_, $solicitudes{$_}]);
 
 		# Ordenamos el array
-		@rank = sort {$a->[1] cmp $b->[1]} @rank;
+		@rank = sort {$a->[1] <=> $b->[1]} @rank;
 
 		# Si hay mas de los que necesitamos en el ranking, quitamos el menor
 		if((scalar @rank) > $RANK_CANT_PUESTOS) {
@@ -178,17 +179,22 @@ sub rankingDeSolicitantes {
 	}
 
 
+
 	# Escribimos sobre un archivo de ser necesario
 	if($correspondeImprimir)
 	{
 		$cantRepetidos = 1;
 
 		# Contabilizamos la cantidad de archivos con el mismo nombre
+		if(!opendir($REPODIR, $REPODIR)) { return 1; }
+
 		foreach(grep(/^($RANK_NOMBRE_ARCHIVO).(\d){3}$/, 
 			readdir($REPODIR)))
 		{
 			$cantRepetidos += 1;
 		}
+
+		closedir $REPODIR;
 
 		# Si la cantidad de digitos supera el máximo de 999 rankings
 		# retornamos error.
@@ -197,18 +203,17 @@ sub rankingDeSolicitantes {
 		}
 
 		# Armamos nombre para el archivo de ranking
-		$nombreArchivo = $REPODIR.$RANK_NOMBRE_ARCHIVO.
+		$nombreArchivo = $REPODIR.$RANK_NOMBRE_ARCHIVO.".".
 			numberPadding($cantRepetidos, 3);
 
 		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
 
 		# Escribimos encabezados
 		print FILEHANDLER "Ranking de 10 principales solicitantes de reservas.\n\n\n";
-		print FILEHANDLER "CORREO ELECTRÓNICO\t\t\tCANTIDAD\n\n";
+		print FILEHANDLER "CANTIDAD\t\tCORREO ELECTRÓNICO\n\n";
 
-		# Imprimimos el ranking
 		for($i = ((scalar @rank) - 1); $i >= 0; $i--) {
-			print FILEHANDLER "@rank->[$i]->[0]\t\t\t\t\t@rank->[$i]->[1]\n";
+			print FILEHANDLER "$rank[$i][1]\t\t\t$rank[$i][0]\n";
 		}
 
 		close(FILEHANDLER);
@@ -217,10 +222,10 @@ sub rankingDeSolicitantes {
 
 	# Imprimimos por pantalla el ranking
 	print "Ranking de 10 principales solicitantes de reservas.\n\n\n";
-	print "CORREO ELECTRÓNICO\t\t\tCANTIDAD\n\n";
+	print "CANTIDAD\t\tCORREO ELECTRÓNICO\n\n";
 
 	for($i = ((scalar @rank) - 1); $i >= 0; $i--) {
-		print "@rank->[$i]->[0]\t\t\t\t\t@rank->[$i]->[1]\n";
+		print "$rank[$i][1]\t\t\t$rank[$i][0]\n";
 	}
 
 	return 0;
