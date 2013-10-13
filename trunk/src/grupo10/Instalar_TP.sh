@@ -71,7 +71,7 @@ mensaje_instalacion_existente_incompleta () {
 	./.tmp/bin/VerificarInstalacion.sh REP $conf ; ec_REP=$?
 	./.tmp/bin/VerificarInstalacion.sh PROC $conf ; ec_PROC=$?
 
-	ls_conf = `ls $CONFDIR`
+	ls_conf=`ls $CONFDIR`
 	log "I" "Librería del Sistema:  $CONFDIR .Archivos: $ls_conf"
 
 	if [ $ec_BIN == 0 ]
@@ -348,13 +348,14 @@ error_al_instalar () {
 }
 
 limpiar_archivos_de_instalacion () {
-	if [ -d "${GRUPO}/.tmp" ]
-	then 
-		log "I" "Eliminando archivos de instalación"
-		`rm ${GRUPO}/.tmp/*/*`
-		`rmdir ${GRUPO}/.tmp/*`
-		`rmdir ${GRUPO}/.tmp`
-	fi
+#	if [ -d "${GRUPO}/.tmp" ]
+#	then 
+#		log "I" "Eliminando archivos de instalación"
+#		`rm ${GRUPO}/.tmp/*/*`
+#		`rmdir ${GRUPO}/.tmp/*`
+#		`rmdir ${GRUPO}/.tmp`
+#	fi
+	echo "limpiando"
 }
 
 instalar () {
@@ -468,7 +469,7 @@ instalar () {
 	linea="DATASIZE=${DATASIZE}=${user}=${date}" ; echo "$linea" >> $conf
 	linea=""
 	
-	rm -rf "${GRUPO}/.tmp"
+	limpiar_archivos_de_instalacion
 	
 	log "I" "Instalacion CONCLUIDA"
 
@@ -500,7 +501,6 @@ fi
 if [ $existe_conf == 1 ] #changeeeeeeeeeeeee
 then
 	./.tmp/bin/VerificarInstalacion.sh COM $conf
-	inst_completa=$?
 	completa=$?
 	if [ $completa == 0 ]
 	then
@@ -514,7 +514,6 @@ then
 	fi
 	#Si pasa por aca es que la instalación no está completa
 	cargar_config
-	completar_instalacion
 	log I $COPY_W
 	mensaje_instalacion_existente_incompleta
 	log I "Estado de la instalación: INCOMPLETA"
@@ -536,12 +535,26 @@ then
 				BINDIR=`def_dir "(entrar para default: $BINDIR):" $BINDIR`
 				echo $BINDIR
 			fi
+
+			if [ "$FALTA_BINDIR" == "1" ]
+			then 
+				log I "Faltan archivos ejecutables. No se puede continuar"
+				limpiar_archivos_de_instalacion
+				exit 0
+			fi
 			
 			if [ "$FALTA_MAEDIR" == "2" ]
 			then 
 				log I "Defina el directorio de instalación de los archivos maestros"
 				MAEDIR=`def_dir "(entrar para default: $MAEDIR):" $MAEDIR`
 				echo $MAEDIR
+			fi
+
+			if [ "$FALTA_MAEDIR" == "1" ]
+			then 
+				log I "Faltan archivos maestros. No se puede continuar"
+				limpiar_archivos_de_instalacion
+				exit 0
 			fi
 
 			if [ "$FALTA_ARRIDIR" == "2" ]
@@ -593,7 +606,6 @@ then
 
 			clear
 			mensaje_dir_instalacion
-			log "I" "Los datos ingresados son correctos? (Si-No): "
 			leer_opcion_si_no "Los datos ingresados son correctos? (Si-No): "
 			if [ $? == 1 ]
 			then 
