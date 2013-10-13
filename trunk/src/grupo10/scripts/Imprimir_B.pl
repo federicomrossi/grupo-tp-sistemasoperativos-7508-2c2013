@@ -34,7 +34,7 @@ require 'libs/lib_utilities.pl';
 
 $PROCDIR = "../procesados/";
 $RESERVASOK = "reservas.ok";
-$RANK_SALIDA_ARCHIVO = "./";
+$REPODIR = "./";
 
 ################################## END HARDCODEO
 
@@ -185,7 +185,7 @@ sub rankingDeSolicitantes {
 
 		# Contabilizamos la cantidad de archivos con el mismo nombre
 		foreach(grep(/^($RANK_NOMBRE_ARCHIVO).(\d){3}$/, 
-			readdir($RANK_SALIDA_ARCHIVO)))
+			readdir($REPODIR)))
 		{
 			$cantRepetidos += 1;
 		}
@@ -197,7 +197,7 @@ sub rankingDeSolicitantes {
 		}
 
 		# Armamos nombre para el archivo de ranking
-		$nombreArchivo = $RANK_SALIDA_ARCHIVO.$RANK_NOMBRE_ARCHIVO.
+		$nombreArchivo = $REPODIR.$RANK_NOMBRE_ARCHIVO.
 			numberPadding($cantRepetidos, 3);
 
 		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
@@ -267,7 +267,7 @@ if($ok) {
 	# Si hay exactamente 2 opciones, se busca que exista -w.
 	# Si hay una opcion, se busca que no exista ni -w ni -a
 	elsif (($tamanio == 2 && exists $Opciones{'w'}) || ($tamanio == 1 && !exists $Opciones{'w'} && !exists $Opciones{'a'})) {
-		if (exists $Opciones{'i'}) {
+		if(exists $Opciones{'i'}) {
 			print "Elegi i\n"; 
 		}
 		elsif (exists $Opciones{'d'}) {
@@ -275,7 +275,12 @@ if($ok) {
 			disponibilidad();
 		}
 		elsif (exists $Opciones{'r'}) {
-			print "Elegi r \n"; 
+			if (exists $Opciones{'w'}) {
+				rankingDeSolicitantes(1);
+			}
+			else {
+				rankingDeSolicitantes(0);
+			}
 		}
 		elsif (exists $Opciones{'t'}) {
 			print "Elegi t \n"; 
