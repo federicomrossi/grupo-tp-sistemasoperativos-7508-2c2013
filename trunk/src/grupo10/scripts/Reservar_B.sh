@@ -373,7 +373,7 @@ function aceptarReserva() {
 	nombre_sala=`echo $nombre_sala | cut -d ';' -f "2"`
 
 	# Se arma el registro
-	local registro_ok="$id_obra;$nombre_obra;$fecha_evento;$hora_evento;$id_sala;$nombre_sala;$butacas_solicitadas;$id_combo;$ref_interna;$butacas_solicitadas;$correo;$fecha_hoy;$usuario"
+	local registro_ok="$id_obra;$nombre_obra;$fecha_evento;$hora_evento;$id_sala;$nombre_sala;$butacas_solicitadas;$id_combo;$ref_interna;$butacas_solicitadas;$correo_solicitante;$fecha_hoy;$usuario"
 
 	# Se graba en el archivo
 	echo "$registro_ok" >> "$PROCDIR/reservas.ok"
