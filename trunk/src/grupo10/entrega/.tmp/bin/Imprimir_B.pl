@@ -54,29 +54,7 @@ $TICKET_EXT_ARCHIVO = ".tck";
 
 
 
-
-# Variable que contiene el display de la ayuda
-$ayuda = "\n** Ayuda Imprimir_B **\n
-Uso: Imprimir_B [OPCION]
-o: Imprimir_B -w [OPCION]
-
-Imprime en pantalla o graba en archivo (utlilzando -w) la informacion 
-correspondiente a OPCION.
-
-Nota: Todos las opciones pueden ser combinadas con -w, salvo en caso
-de que sea especificado lo contrario.
-
-OPCION:
-  -a 			Muestra esta ayuda. No puede ser combinado con -w.
-  -d 			Genera una lista de disponibilidades para una
-  				obra o una sala.
-  -i 			Genera una lista de invitados a un evento.
-  -r 			Genera un ranking con los 10 principales 
-  				solicitantes de reservas.
-  -t 			Genera un listado de tickets a imprimir.
-
-Para ver la documentacion completa, correr: ..\n
-** Fin Ayuda Imprimir_B **\n\n";
+### CONSTANTES PARA LOS TEXTOS DE ERRORES
 
 # Variable que contiene el mensaje de error para el caso en que no se han
 # especificado parámetros de entrada.
@@ -95,6 +73,17 @@ $errorRepeticion = "
 -> Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 
+
+### SUBRUTINAS
+
+
+# Subrutina que imprime la ayuda por la salida estandar.
+sub ayuda {
+	print `cat Ayuda`;
+}
+
+
+# [ INSERTAR DOCUMENTACION ]
 sub disponibilidad {
 
 	# $string = "The time is: 12:31:02 on 4/12/00";
@@ -240,11 +229,18 @@ sub rankingDeSolicitantes {
 # Subrutina que se encarga de generar los tickets. Esto lo realiza solicitando
 # al usuario que ingrese un ID del Combo para el cual desea generar los tickets
 # a través de la entrada estandar. De no encontrarse el ID del combo se volverá
-# a solicitar hasta validar la existencia del mismo.
+# a solicitar hasta validar la existencia del mismo. Este imprime por pantalla
+# el ranking, y de ser especificado, también lo imprimira sobre un archivo.
+# PRE: el único parámetro se refiere a si se desea grabar en un archivo los
+# tickets. De ser deseado este comportamiento, debe pasarse un valor distinto
+# de cero como parámetro o cero en su defecto.
 # POST: se genera un archivo cuyo nombre será ID_DEL_COMBO.tck y donde sus
 # sus registros poseeran como primer campo el Tipo de comprobante y los
 # restantes poseen la información de la obra y el solicitante.
 sub listadoDeTickets {
+
+	# Leemos valores de los argumentos
+	$correspondeImprimir = $_[0];
 
 	my @reservas = ();
 
@@ -289,12 +285,48 @@ sub listadoDeTickets {
 		}
 	}
 
+	# Escribimos sobre un archivo de ser necesario
+	if($correspondeImprimir)
+	{
+		# Generamos el archivo de tickets
+		$nombreArchivo = $REPODIR.$idCombo.$TICKET_EXT_ARCHIVO;
 
-	# Generamos el archivo de tickets
-	$nombreArchivo = $REPODIR.$idCombo.$TICKET_EXT_ARCHIVO;
+		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
 
-	open(FILEHANDLER, "+>$nombreArchivo") or return 3;
+		for($i = 0; $i < (scalar @reservas); $i++) {
+			
+			# Caso en que la reserva no cuenta con confirmaciones
+			if($reservas[$i][0] == 0){
+				next;
+			}
+			# Caso en que la reserva cuenta con una sola confirmacion
+			elsif($reservas[$i][0] == 1) {
+				print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+			}
+			# Caso en que la reserva cuenta con dos confirmaciones
+			elsif($reservas[$i][0] == 2) {
+				print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
+			}
+			# Caso en que la reserva cuenta con mas de dos confirmaciones
+			elsif($reservas[$i][0] > 2) {
 
+				# Imprimimos para dos entradas
+				for($k = 0; $k < int($reservas[$i][0] / 2); $k++){
+					print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
+				}
+
+				# Si queda un remamente de una entrada para completar, lo
+				# generamos como un vale para una entrada.
+				if(int($reservas[$i][0] % 2) > 0) {
+					print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+				}
+			}
+		}
+
+		close(FILEHANDLER);
+	}
+
+	# Imprimimos tickets por pantalla
 	for($i = 0; $i < (scalar @reservas); $i++) {
 		
 		# Caso en que la reserva no cuenta con confirmaciones
@@ -303,29 +335,27 @@ sub listadoDeTickets {
 		}
 		# Caso en que la reserva cuenta con una sola confirmacion
 		elsif($reservas[$i][0] == 1) {
-			print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+			print "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
 		}
 		# Caso en que la reserva cuenta con dos confirmaciones
 		elsif($reservas[$i][0] == 2) {
-			print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
+			print "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
 		}
 		# Caso en que la reserva cuenta con mas de dos confirmaciones
 		elsif($reservas[$i][0] > 2) {
 
 			# Imprimimos para dos entradas
 			for($k = 0; $k < int($reservas[$i][0] / 2); $k++){
-				print FILEHANDLER "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
+				print "VALE POR 2 ENTRADAS;$reservas[$i][1]\n";
 			}
 
 			# Si queda un remamente de una entrada para completar, lo
 			# generamos como un vale para una entrada.
 			if(int($reservas[$i][0] % 2) > 0) {
-				print FILEHANDLER "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
+				print "VALE POR 1 ENTRADA;$reservas[$i][1]\n";
 			}
 		}
 	}
-
-	close(FILEHANDLER); 
 }
 
 
@@ -386,7 +416,12 @@ if($ok) {
 			}
 		}
 		elsif (exists $Opciones{'t'}) {
-			listadoDeTickets();
+			if (exists $Opciones{'w'}) {
+				listadoDeTickets(1);
+			}
+			else {
+				listadoDeTickets(0);
+			}
 		}
 		else {
 			# Se ingreso la opcion -w en conjunto con la opcion -a
@@ -396,8 +431,7 @@ if($ok) {
 
 	# Si el tamanio es 1 y pidieron la ayuda
 	elsif ($tamanio == 1 && exists $Opciones{'a'}) {
-		#print $ayuda; 
-		print `cat Ayuda`;
+		ayuda();
 	}
 
 	# Se ingresaron otra lista de opciones incorrectas
