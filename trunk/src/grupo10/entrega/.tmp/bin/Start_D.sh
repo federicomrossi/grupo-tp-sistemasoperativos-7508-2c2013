@@ -1,10 +1,10 @@
 #!/bin/bash
 ########################MAIN########################
 
-q=`ps -ef | grep -v grep | grep '[.]/Recibir_B.sh' | wc -l`
-if [ $q -eq 0 ]
+if [ -z $(pgrep Recibir_B.sh) ] 
 then
-	./Recibir_B.sh &
+	#./Recibir_B.sh &
+	 nohup Recibir_B.sh > /dev/null 2>&1 &
 	LASTPID=$!
 	echo "Se inicio la ejecucion del demonio Recibir_B.sh bajo el PID: $LASTPID"
 else

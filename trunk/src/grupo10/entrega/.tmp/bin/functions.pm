@@ -246,4 +246,125 @@ sub truncate_file
     return 0;
 }
 
+sub grabarSiCorresponde
+{
+    #Debug
+    my $LOG_MOVER_B = "../log/Mover_B.log";
+    ##
+
+    my $comando = $_[0];
+    my $origen = $_[1];
+    my $destino = $_[2];
+    my $resOperacion = $_[3];
+
+    if (($comando eq "Recibir_B") || ($comando eq "Reservar_B")) {
+        if($resOperacion == 1)
+        {
+            # No se pudo mover porque el directorio origen no existe
+            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio origen ($origen) no existe.", $LOG_MOVER_B);
+            return;
+        }
+        elsif($resOperacion == 2)
+        {
+            # No se pudo mover el archivo porque el destino no existe
+            Grabar_L("Mover_B", "E", "Error al intentar mover. El directorio destino ($destino) no existe.", $LOG_MOVER_B);
+            return;
+        }
+        # Si salio bien, se guarda un mensaje informativo
+        Grabar_L("Mover_B", "I", "El archivo $origen se movió correctamente a $destino.", $LOG_MOVER_B);
+    }
+}
+
+
+sub Mover_B
+{
+    use warnings;
+    use File::Copy 'move';
+
+    require 'libs/lib_utilities.pl';
+    # Almacenamos parámetros de entrada
+    my $origen = $_[0];
+    my $destino = $_[1];
+    my $comando = "";
+    my $nombreArchivo = "";
+    my $pathOrigen = "";
+
+    # Comprobamos si existe un tercer parametro con el nombre del comando invocante
+    # En el transcurso del programa, se utiliza para grabar en el log si el comando
+    # invocante lo hace.
+    if ($_[2]) {
+        $comando = $_[2];
+    }
+
+    # Directorio de archivos duplicados
+    my $dirDuplicados = $destino . "/dup/";
+
+
+    # Verificamos si el origen existe
+    unless(-e $origen) {
+        grabarSiCorresponde($comando, $origen, $destino, 1);
+        exit 1;
+    }
+
+    # Verificamos si el directorio destino existe. De ser así, lo dejamos abierto.
+    unless( -d $destino) {
+        grabarSiCorresponde($comando, $origen, $destino, 2);
+        exit 2;
+    }
+    
+    # Verificamos si el origen es igual al destino en cuyo caso ya se movió el
+    # archivo
+    ($pathOrigen, $nombreArchivo) = obtenerDir($origen);
+    if($pathOrigen eq $destino) {
+        grabarSiCorresponde($comando, $origen, $destino, 0);
+        exit 0;
+    }
+
+    # Verificamos la existencia de archivos duplicados:
+    # - Abrimos el directorio.
+    unless(opendir(DESTINO,$destino)) {
+        grabarSiCorresponde($comando, $origen, $destino, 2);
+        exit 2;
+    }
+
+    # - Buscamos si algún archivo posee el mismo nombre.
+    foreach(grep(/^($nombreArchivo)$/, readdir(DESTINO)))
+    {   
+        # Abrimos directorio "dup" o lo creamos en caso de no existir
+        unless(opendir(DIRDUPLICADOS,$dirDuplicados))
+        {
+            mkdir($dirDuplicados);
+            opendir(DIRDUPLICADOS,$dirDuplicados);
+        }
+
+        my $cantRepetidos = 1;
+
+        # Contabilizamos la cantidad de archivos con el mismo nombre
+        foreach(grep(/^($nombreArchivo).(\d){3}$/, readdir(DIRDUPLICADOS)))
+        {
+            $cantRepetidos += 1;
+        }
+
+        # Movemos el archivo que se encontraba originalmente en destino hacia la
+        # carpeta de duplicados (dup/) con el número de secuencia correspondiente.
+        move $destino.$nombreArchivo, ($dirDuplicados.$nombreArchivo."."
+            .numberPadding($cantRepetidos, 3));
+
+        # Cerramos el directorio duplicados
+        closedir(DIRDUPLICADOS);
+    }
+
+    # Movemos el archivo
+    my $error = 0;
+    if (!move ($origen, $destino)) {
+        $error = 1;
+    }
+
+    # Devolvemos el codigo de error
+    grabarSiCorresponde($comando, $origen, $destino, $error);
+
+    closedir DESTINO;
+
+}
+
 1;

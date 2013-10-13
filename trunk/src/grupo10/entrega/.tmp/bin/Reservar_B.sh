@@ -50,12 +50,11 @@ readonly CHAR_SIN_PCyDP="[\x00-\x39|\x3C-\xFF]"
 
 # DEBUG: Deben cambiar
 readonly LOG_PATH="../log/Reservar_B.log"
-readonly SCRIPTS="./"
 
 # Funcion que escribe en el log
 # Recibe como parametros: 1- Tipo de mensaje, 2- Mensaje
 function log (){
-    perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Reservar_B', '$1', '$2', '$LOG_PATH')"
+    perl -I$BINDIR -Mfunctions -e "functions::Grabar_L('Reservar_B', '$1', '$2', '$LOG_PATH')"
 }
 
 
@@ -79,7 +78,7 @@ function validarDuplicados() {
 # Recibe como parametros: 1- El nombre del archivo.
 function validarTamanio() {
 	# Si existe el archivo y ademas tiene tamaño mayor a 0
-	if [ -s "$ACEPDIR$1" ]; then
+	if [ -s "$ACEPDIR/$1" ]; then
 		return $VALIDO
 	else
 		return $INVALIDO
@@ -111,8 +110,8 @@ function archivoValido() {
 	fi
 
 	# Sino, se analiza que los campos obligatorios esten presentes
-	# ret_val_AV=`grep -c -v "^[^;]*;[^;/]\+/[^;/]\+/[^;/]\+;[^;:]\+:[^;:]\+;[^;]*;[^;]*;[0-9]\+;[^;]*$" "$ACEPDIR$1"`
-	ret_val_AV=`grep -c -v -P "^$CHAR_SIN_PC*;$CHAR_SIN_PCyB+/$CHAR_SIN_PCyB+/$CHAR_SIN_PC+;$CHAR_SIN_PCyDP+:$CHAR_SIN_PC+;$CHAR_SIN_PC*;$CHAR_SIN_PC*;[0-9]+;$CHAR_SIN_PC*$" "$ACEPDIR$1"`
+	# ret_val_AV=`grep -c -v "^[^;]*;[^;/]\+/[^;/]\+/[^;/]\+;[^;:]\+:[^;:]\+;[^;]*;[^;]*;[0-9]\+;[^;]*$" "$ACEPDIR/$1"`
+	ret_val_AV=`grep -c -v -P "^$CHAR_SIN_PC*;$CHAR_SIN_PCyB+/$CHAR_SIN_PCyB+/$CHAR_SIN_PC+;$CHAR_SIN_PCyDP+:$CHAR_SIN_PC+;$CHAR_SIN_PC*;$CHAR_SIN_PC*;[0-9]+;$CHAR_SIN_PC*$" "$ACEPDIR/$1"`
 	
 	# Si hay 1 o mas lineas invalidas, entonces se rechaza el archivo completo
 	if [ "$ret_val_AV" != "0" ]; then
@@ -144,7 +143,7 @@ function procesarArchivo() {
 	
 
 	# Obtiene la cantidad de registros en el archivo (1 reg por linea)
-	cant_lineas_arch=`wc -l < $ACEPDIR${1}`
+	cant_lineas_arch=`wc -l < $ACEPDIR/${1}`
 	cant_lineas_arch=$(( $cant_lineas_arch + 1 ))
 
 	# Se obtiene el ID que aparece al comienzo en el nombre del archivo.
@@ -153,7 +152,7 @@ function procesarArchivo() {
 
 	# Para cada registro...
 	for i in `seq 1 ${cant_lineas_arch}`; do
-		linea=`head -n $i $ACEPDIR${1} | tail -n 1`
+		linea=`head -n $i $ACEPDIR/${1} | tail -n 1`
 
 		# Levanto el campo 2, que es el de la fecha
 		fecha=`echo ${linea} | cut -d ';' -f "2"`
@@ -294,7 +293,7 @@ function procesarArchivo() {
 # Recibe como parametros: 1- El nombre del archivo, 2- Motivo rechazo
 function rechazarArchivo() {
     # Movemos archivo a $RECHDIR
-    perl ./Mover_B.pl "$ACEPDIR$1" "$RECHDIR" "Reservar_B"
+    perl -I$BINDIR -Mfunctions -e "functions::Mover_B('$ACEPDIR/$1', '$RECHDIR', 'Reservar_B')"
     
     # Se graba en el log un mensaje aclaratorio
     log "M" "El archivo se rechaza por el siguiente motivo: $2"
@@ -366,10 +365,10 @@ function aceptarReserva() {
 	local usuario=`id -u -n`
 
 	# Se obtiene la informacion que resta
-	local nombre_obra=`grep -P "^$id_obra" "$MAEDIR/obras.mae"`
+	local nombre_obra=`grep "^$id_obra;" "$MAEDIR/obras.mae"`
 	nombre_obra=`echo $nombre_obra | cut -d ';' -f "2"`
 
-	local nombre_sala=`grep -P "^$id_sala" "$MAEDIR/obras.mae"`
+	local nombre_sala=`grep "^$id_sala;" "$MAEDIR/salas.mae"`
 	nombre_sala=`echo $nombre_sala | cut -d ';' -f "2"`
 
 	# Se arma el registro
@@ -400,7 +399,7 @@ function validarFecha() {
 
 		# Compruebo si corresponde a fecha de calendario:
 		# - Busca en el calendario la fecha, si es valida devuelve 0
-		validez=`date -d "$mes/$dia/$anio" > /dev/null 2>&1 ; echo $?`
+		validez=`date -d "$mes/$dia/$anio" > /dev/null ; echo $?`
 
 		# - Si devuelve 0, entonces es una fecha valida
 		# - Sino, devuelve un codigo de error 1
@@ -534,10 +533,10 @@ function guardarDisponibilidades() {
 
 
 # DEBUG: Por ahora el path de la carpeta arribos se define 
-ACEPDIR="../aceptados/"
-PROCDIR="../procesados/"
-MAEDIR="../mae/"
-RECHDIR="../rechazados/"
+# ACEPDIR="../aceptados"
+# PROCDIR="../procesados"
+# MAEDIR="../mae"
+# RECHDIR="../rechazados"
 
 # Variables
 cant_elementos=0
@@ -560,7 +559,7 @@ for j in `seq 1 ${cant_elementos}`; do
 	log "I" "Archivo a procesar: $nombre_archivo."
 
 	# Si se trata de un archivo,
-	if [ -f $ACEPDIR$nombre_archivo ]; then
+	if [ -f $ACEPDIR/$nombre_archivo ]; then
 		# Se analiza si es valido
 		motivo_rechazo=`archivoValido $nombre_archivo`
 		ret_val=`echo $?`
@@ -571,7 +570,7 @@ for j in `seq 1 ${cant_elementos}`; do
 			procesarArchivo $nombre_archivo
 
 			# Y se mueve a $PROCDIR
-    		perl ./Mover_B.pl "$ACEPDIR$nombre_archivo" "$PROCDIR" "Reservar_B"
+			perl -I$BINDIR -Mfunctions -e "functions::Mover_B('$ACEPDIR/$nombre_archivo', '$PROCDIR', 'Reservar_B')"
 
 			# Se persiste la tabla de disponibilidades en el archivo 'combos.dis'
 			guardarDisponibilidades
@@ -581,14 +580,14 @@ for j in `seq 1 ${cant_elementos}`; do
 			rechazarArchivo "$nombre_archivo" "$motivo_rechazo"
 		fi
 	# Si es un directorio, se trata de la carpeta de duplicados -> se rechazan todos los archivos
-	elif [ -d $ACEPDIR$nombre_archivo ]; then
+	elif [ -d $ACEPDIR/$nombre_archivo ]; then
 		# Busca la cantidad de elementos contenidos en el directorio
-		cant_elementos_dup=`ls -p $ACEPDIR$nombre_archivo | wc -l`
+		cant_elementos_dup=`ls -p $ACEPDIR/$nombre_archivo | wc -l`
 
 		# Para cada elemento...
 		for k in `seq 1 ${cant_elementos_dup}`; do
 			# Obtengo el nombre de un elemento
-			nombre_archivo_dup=`ls -1p $ACEPDIR$nombre_archivo | head -n 1`
+			nombre_archivo_dup=`ls -1p $ACEPDIR/$nombre_archivo | head -n 1`
 
 			motivo_rechazo="Archivo $nombre_archivo_dup se encuentra duplicado"
 

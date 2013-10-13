@@ -7,7 +7,7 @@
 MSG_TYPE="Test"
 MSG_NUM=0
 MSG_TEXT="Mensaje de Log"
-
+log="$LOGDIR/Iniciar_B.log"
 ########################VARIABLES########################
 CONFDIR="/confdir/Instalar_TP.conf"
 BASEPATH=`echo $PWD | grep -o '.*grupo10'` 
@@ -15,18 +15,25 @@ CONF="${BASEPATH}${CONFDIR}"
 ERRORCODE=0
 ########################FUNCTIONS########################
 function verificar_configuracion(){
-        #chequea si el archivo de configuración existe
-        #CONF="./${CONFDIR}/${CONFFILE}"
-        #El nombre del archivo de configuración es: $CONF
-        if [ ! -f $CONF ]
-        then
-			echo "Error: el archivo de configuración no existe (no se puede loggear)"
+	if [ -f "$PROCDIR/reservas.ok" ]; then
+		rm "$PROCDIR/reservas.ok"
+	fi
+	if [ -f "$PROCDIR/reservas.nok" ]; then
+		rm "$PROCDIR/reservas.nok"
+	fi
+
+    #chequea si el archivo de configuración existe
+    #CONF="./${CONFDIR}/${CONFFILE}"
+    #El nombre del archivo de configuración es: $CONF
+    if [ ! -f $CONF ]
+    then
+		echo "Error: el archivo de configuración no existe (no se puede loggear)"
 		return 1
-        fi
-        #Si se detecta algún problema en la instalación, explicar la situación y terminar la ejecución - Identificar componentes faltantes (leer instalación) - GRABA EN LOG
-        #Si no se detecta problemas, seguir
-        #echo "Verificar si la instalación está completa"
-        return 0
+    fi
+    #Si se detecta algún problema en la instalación, explicar la situación y terminar la ejecución - Identificar componentes faltantes (leer instalación) - GRABA EN LOG
+    #Si no se detecta problemas, seguir
+    #echo "Verificar si la instalación está completa"
+    return 0
 }
 function verificar_ejecucion_anterior(){
 
@@ -61,20 +68,22 @@ function set_variables(){
         #export DATASIZE=100000
 	while read LINE; do
 		#echo "$LINE"
+
 		VARIABLE=`echo $LINE | cut -d '=' -f '1'`
 		VALOR=`echo $LINE | cut -d '=' -f '2'`
 		if [[ $LINE != "" ]];
 		then
-			export $VARIABLE="$VALOR"
+			 export $VARIABLE="$VALOR"
 		fi
 	done<$CONF
+
 	FILE="${LOGDIR}/archivo${LOGEXT}"
     return 0
 }
 function log (){
 	echo "$2"
 
-	#perl -I$SCRIPTS -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
+	perl -I$BINDIR -Mfunctions -e "functions::Grabar_L('Iniciar_B', '$1', '$2', '$log')"
 	return 0	
 }
 function verificar_instalacion(){
@@ -173,14 +182,15 @@ function set_path(){
 function invocar_detectar(){
 	#Siempre que Recibir_B.sh no este ejecutando, lanzar. Verificar con comando ps - GRABA EN LOG
 	#Sino - GRABA EN LOG
-	q=`ps r -ef | grep -v grep | grep '[.]/Recibir_B.sh' | wc -l`
-	if [ $q -eq 0 ]
-	then
-		#echo "Puedo lanzar ./Recibir_B.sh"
-		./Recibir_B.sh &
-		LASTPID=$!
-		log "I" "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
-	fi
+	# q=`ps -ef | grep -v grep | grep '[.]/Recibir_B.sh' | wc -l`
+	# if [ $q -eq 0 ]
+	# then
+	# 	#echo "Puedo lanzar ./R&ecibir_B.sh"
+	# 	./Recibir_B.sh &
+	# 	LASTPID=$!
+	# 	log "I" "Demonio corriendo bajo el proceso Nro.: ${LASTPID}"
+	# fi
+	Start_D.sh
 	return 0
 }
 
@@ -254,14 +264,15 @@ then
 	set_path
 	if [ $? -eq 0 ]
 	then
-		#echo "TO-DO: set_path OK!!!"
+		log "I" "Proceso de Inicialización concluido"
+		echo "Entorno inicializado correctamente"
 		ERRORCODE=0
 	else
 		#echo "TO-DO: set_path ERROR!!!"
 		ERRORCODE=1
 	fi
 fi
-
+		
 if [ $ERRORCODE -eq 0 ]
 then
 	while :
@@ -274,13 +285,16 @@ then
 		fi
 	done
 	
-	if [ Decision == "S" ]
+	if [ $Decision == "S" -o $Decision == "s" ]
 	then
+		echo "invocar_Detectar"
 		invocar_detectar
-		if [ $? -eq 0 ]
+		var=$?
+		echo $var
+		if [ $var -eq 0 ]
 		then
 			#echo "TO-DO: invocar_detectar OK!!!"
-			echo "Proceso Recibir_B iniciado correctamente."
+			echo "Proceso Recibir_B iniciado."
 			echo "Para detenerlo ejecute el comando Stop_D"
 			ERRORCODE=0
 		else
@@ -293,9 +307,4 @@ then
 	fi
 fi
 
-if [ $ERRORCODE -eq 0 ]
-then
-	log "I" "Proceso de Inicialización concluido"
-	echo "Entorno inicializado correctamente"
-fi
 #########################FIN########################

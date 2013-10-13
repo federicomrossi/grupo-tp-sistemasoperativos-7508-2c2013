@@ -33,7 +33,7 @@ MAE (){
 	#echo "Verificando MAE"
 	codigo_err=0
 	dir=""
-	dir=`grep "MAEDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^MAEDIR" <$1 | cut -d "=" -f 2`
 	
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -50,6 +50,8 @@ MAE (){
 			fi
 	#	fi
 
+	#done <$1
+	
 	return $codigo_err
 }
 
@@ -58,7 +60,7 @@ BIN (){
 	#echo "Verificando BIN"
 	codigo_err=0
 	dir=""
-	dir=`grep "BINDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^BINDIR" <$1 | cut -d "=" -f 2`
 
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -85,7 +87,7 @@ LOG (){
 	#echo "Verificando LOG"
 	codigo_err=0
 	dir=""
-	dir=`grep "LOGDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^LOGDIR" <$1 | cut -d "=" -f 2`
 
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -107,7 +109,7 @@ ARR (){
 	#echo "Verificando ARRIDIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "ARRIDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^ARRIDIR" <$1 | cut -d "=" -f 2`
 
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -129,7 +131,7 @@ ACEP (){
 	#echo "Verificando ACEPDIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "ACEPDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^ACEPDIR" <$1 | cut -d "=" -f 2`
 
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -151,7 +153,7 @@ REC (){
 	#echo "Verificando RECHDIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "RECHDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^RECHDIR" <$1 | cut -d "=" -f 2`
 	
 	#while IFS== read -r var valor usuario fecha
 	#do
@@ -173,7 +175,7 @@ REP (){
 	#echo "Verificando REPODIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "REPODIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^REPODIR" <$1 | cut -d "=" -f 2`
 	
 	
 	#while IFS== read -r var valor usuario fecha
@@ -196,7 +198,7 @@ PROC (){
 	#echo "Verificando PROCDIR"
 	codigo_err=0
 	dir=""
-	dir=`grep "PROCDIR" <$1 | cut -d "=" -f 2`
+	dir=`grep "^PROCDIR" <$1 | cut -d "=" -f 2`
 	
 	
 	#while IFS== read -r var valor usuario fecha
