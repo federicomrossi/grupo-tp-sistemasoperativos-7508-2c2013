@@ -1,0 +1,31 @@
+#########################################################################################################################################
+#########################################################################################################################################
+######### RESER_B #######################################################################################################################
+######### TP SO7508 Segundo Cuatrimestre 2013. Tema B Copyright © Grupo 10 ##############################################################
+#########################################################################################################################################
+#########################################################################################################################################
+
+1- Instalación
+#########################################################################################################################################
+	a- Insertar el dispositivo de almacenamiento con el contenido del sistema. Desde ahora <origen>
+	b- Crear en el directorio corriente un directorio de trabajo. Desde ahora <dir_instalacion>
+	c- Copiar el archivo TPGRUPO10.tar.gz en el directorio de trabajo. (cp <origen>/TPGRUPO10.tar.gz <dir_instalacion>).
+	d- Descomprimir el archivo TPGRUPO10.tar.gz del directorio actual <dir_instalacion> (tar -xvzf <dir_instalacion>/TPGRUPO10.tar.gz).
+	e- Se generará un directorio llamado grupo10. Puede borrar si desea el archivo .tar.gz (rm <dir_instalacion>/TPGRUPO10.tar.gz).
+	f- Entrar en el directorio <dir_instalacion>/grupo10 y ejecutar el script Intalar_TP.sh. 
+
+	La instalación le pedirá que ingrese los distintos directorios para los ejecutables, archivos maestros, archivos externos,
+	archivos externos aceptados, archivos externos rechazados, listados de salida, archivos procesados, archivos de log.
+	A su vez también deberá definir la extensión de los archivos de log, el tamaño máximo del log y el tamaño mínimo para el arribo de 
+	archivos externos.
+	La instalación creará los directorios ingresados por el usuario y copiará los archivos maestros, ejecutables y de procesamiento.
+
+	El único requisito para poder ejecutar el sistema RESER_B es contar con una versión de Perl superior a la 5.
+
+2- Iniciar
+##########################################################################################################################################
+	a- Una vez que se complete la instalación podrá iniciar la ejecución del sistema RESER_B simplemente ejecutando el script Iniciar_B.sh
+
+
+
+
