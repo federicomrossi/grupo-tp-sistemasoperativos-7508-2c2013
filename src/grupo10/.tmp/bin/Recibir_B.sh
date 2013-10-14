@@ -13,6 +13,7 @@ MAESALA="$MAEDIR/salas.mae"
 
 # Constante que representa caracteres ascii y no ascii, salvo el delimitador ';'
 readonly CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]"
+readonly CHAR_SIN_PC_C="[\x00-\x3A|\x3C-\x43|\x45-\xFF]"
 
 ########################FUNCTIONS########################
 function log1 (){
@@ -71,7 +72,7 @@ function validar_archivo_reservas()
 	# $f tiene el nombre del archivo
 	
 	#Validar formato
-	if [[ "$f" =~ ^[0-9]+-[_a-zA-Z0-9.-]+@[a-zA-Z0-9.]+-.* ]] # =~ --> que cumpla con la expresion regular num-mail-abc
+	if [[ "$f" =~ ^[0-9]+-$CHAR_SIN_PC_C+@$CHAR_SIN_PC_C+-$CHAR_SIN_PC_C* ]] # =~ --> que cumpla con la expresion regular num-mail-abc
 	then
 		#Validar integridad
 		#Extraigo informacion del nombre del archivo de entrada
@@ -130,7 +131,7 @@ function validar_archivo_invitados()
 	# $f tiene el nombre del archivo
 	
 	#Validar formato
-	if [[ "$f" =~ ^[_a-zA-Z0-9]*\.inv$ ]] # =~ --> que cumpla con la expresion regular num-mail-abc
+	if [[ "$f" =~ ^$CHAR_SIN_PC_C*\.inv$ ]]
 	then
 		return 1
 	fi
