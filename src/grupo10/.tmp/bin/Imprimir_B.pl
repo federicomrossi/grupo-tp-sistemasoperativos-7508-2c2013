@@ -250,7 +250,8 @@ sub disponibilidad {
 			$nombreArchivo = <STDIN>;
 			chomp($nombreArchivo);
 
-			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1))
+			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1) 
+				and !($nombreArchivo eq "combos"))
 			{
 				last;
 			}
