@@ -7,6 +7,10 @@
 use warnings;
 
 
+# Definicion de un caracter sin '/'
+my $CHAR_SIN_B = "[\x00-\x2E|\x30-\xFF]";
+
+
 
 # Subrutina que separa el nombre de archivo del directorio de precedencia.
 # Devuelve dos strings: el directorio y el nombre de archivo por separado.
@@ -15,8 +19,8 @@ sub obtenerDir {
 	$nombre = $_[0];
 
 	# Se parsea el string para devolver el directorio y el nombre del archivo
-	$path =~ s:^($CHAR_SIN_B+/)*($CHAR_SIN_B+)$:$1:;
-	$nombre =~ s:^($CHAR_SIN_B+/)*($CHAR_SIN_B+)$:$2:;
+	$path =~ s:^/?(($CHAR_SIN_B+/)*)($CHAR_SIN_B+)$:$1:;
+	$nombre =~ s:^/?($CHAR_SIN_B+/)*($CHAR_SIN_B+)$:$2:;
 
 	return ($path, $nombre);
 }
