@@ -12,20 +12,13 @@ use warnings;
 # Devuelve dos strings: el directorio y el nombre de archivo por separado.
 sub obtenerDir {
 	$path = $_[0];
-	$max = 0;
+	$nombre = $_[0];
 
-	for($i = length($path); $i >= 0; $i--) {
-		if(substr($path, $i, 1) eq "/"){
-			$max = $i;
-			last;
-		}
-	}
+	# Se parsea el string para devolver el directorio y el nombre del archivo
+	$path =~ s:^($CHAR_SIN_B+/)*($CHAR_SIN_B+)$:$1:;
+	$nombre =~ s:^($CHAR_SIN_B+/)*($CHAR_SIN_B+)$:$2:;
 
-	if($max == 0) {
-		return ("/", $path);
-	}
-
-	return(substr($path, 0, $max + 1), substr($path, $max + 2, length($path)));
+	return ($path, $nombre);
 }
 
 
