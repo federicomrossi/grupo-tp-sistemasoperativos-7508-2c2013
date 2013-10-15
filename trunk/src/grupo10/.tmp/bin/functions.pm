@@ -271,7 +271,6 @@ sub grabarSiCorresponde
     }
 }
 
-
 sub Mover_B
 {
     use warnings;
@@ -284,6 +283,7 @@ sub Mover_B
     my $comando = "";
     my $nombreArchivo = "";
     my $pathOrigen = "";
+    my $cantRepetidos = 1;
 
     # Comprobamos si existe un tercer parametro con el nombre del comando invocante
     # En el transcurso del programa, se utiliza para grabar en el log si el comando
@@ -302,7 +302,7 @@ sub Mover_B
         exit 1;
     }
 
-    # Verificamos si el directorio destino existe. De ser así, lo dejamos abierto.
+    # Verificamos si el directorio destino existe.
     unless( -d $destino) {
         grabarSiCorresponde($comando, $origen, $destino, 2);
         exit 2;
@@ -317,37 +317,46 @@ sub Mover_B
     }
 
     # Verificamos la existencia de archivos duplicados:
-    # - Abrimos el directorio.
-    unless(opendir(DESTINO,$destino)) {
-        grabarSiCorresponde($comando, $origen, $destino, 2);
-        exit 2;
-    }
+    # - Se obtiene la lista de archivos en destino separados con coma
+    my $lista_archivos=`ls -mp $destino`;
 
-    # - Buscamos si algún archivo posee el mismo nombre.
-    foreach(grep(/^($nombreArchivo)$/, readdir(DESTINO)))
-    {   
-        # Abrimos directorio "dup" o lo creamos en caso de no existir
-        unless(opendir(DIRDUPLICADOS,$dirDuplicados))
-        {
-            mkdir($dirDuplicados);
-            opendir(DIRDUPLICADOS,$dirDuplicados);
+    # Si hay elementos en el destino, se validan duplicados.
+    if ( $lista_archivos ) {
+
+        # - Se guarda la lista en un array, salteando los caracteres de separador
+        my @archivos = split(", |,\n", $lista_archivos);
+
+        # Se chequea si existe un archivo con el mismo nombre.
+        # De existir, se crea la carpeta ./dup si corresponde y se mueve el archivo
+        if ( grep(/^$nombreArchivo$/, @archivos) ) {
+
+            # Si existe el directorio ./dup,
+            if ( -d $dirDuplicados ) {
+
+                # - Se obtiene la lista de archivos en destino/dup separados con coma
+                $lista_archivos=`ls -mp $dirDuplicados`;
+
+                if ( $lista_archivos ) {
+
+                    # - Se guarda la lista en un array, salteando los caracteres de separador
+                    @archivos = split(", |,\n", $lista_archivos);
+
+                    # Se cuenta la cantidad de duplicados existentes + 1
+                    $cantRepetidos = grep(/^$nombreArchivo./, @archivos) + 1;
+                }
+            
+            }
+            # Si no, se crea el dir ./dup
+            else {
+                mkdir($dirDuplicados);
+            }
+
+            print "Muevo el archivo duplicado a ./dup\n";
+            # Movemos el archivo que se encontraba originalmente en destino hacia la
+            # carpeta de duplicados (dup/) con el número de secuencia correspondiente.
+            move $destino.$nombreArchivo, ($dirDuplicados.$nombreArchivo."."
+                .numberPadding($cantRepetidos, 3));
         }
-
-        my $cantRepetidos = 1;
-
-        # Contabilizamos la cantidad de archivos con el mismo nombre
-        foreach(grep(/^($nombreArchivo).(\d){3}$/, readdir(DIRDUPLICADOS)))
-        {
-            $cantRepetidos += 1;
-        }
-
-        # Movemos el archivo que se encontraba originalmente en destino hacia la
-        # carpeta de duplicados (dup/) con el número de secuencia correspondiente.
-        move $destino.$nombreArchivo, ($dirDuplicados.$nombreArchivo."."
-            .numberPadding($cantRepetidos, 3));
-
-        # Cerramos el directorio duplicados
-        closedir(DIRDUPLICADOS);
     }
 
     # Movemos el archivo
@@ -358,8 +367,6 @@ sub Mover_B
 
     # Devolvemos el codigo de error
     grabarSiCorresponde($comando, $origen, $destino, $error);
-
-    closedir DESTINO;
 
 }
 
