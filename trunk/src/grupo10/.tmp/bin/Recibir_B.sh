@@ -14,7 +14,7 @@ MAESALA="$MAEDIR/salas.mae"
 # Constante que representa caracteres ascii y no ascii, salvo el delimitador ';'
 readonly CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]"
 readonly CHAR_SIN_PC_C="[\x00-\x2B|\x2D-\x3A|\x3C-\xFF]"
-
+readonly CHAR_SIN_PC_C_GUIONES="[\x00-\x2B|\x2E-\x3A|\x3C-\x5E|\x60-\xFF]"
 ########################FUNCTIONS########################
 function log1 (){
 	#Loguea en el log correspondiente, con el formato correpondiente.
@@ -131,7 +131,7 @@ function validar_archivo_invitados()
 	# $f tiene el nombre del archivo
 	
 	#Validar formato
-	if [[ `echo "$f" | grep -P "^$CHAR_SIN_PC_C+\.inv" | wc -l` -eq 1 ]]
+	if [[ `echo "$f" | grep -P "^$CHAR_SIN_PC_C_GUIONES+\.inv" | wc -l` -eq 1 ]]
 	then
 		return 1
 	fi
