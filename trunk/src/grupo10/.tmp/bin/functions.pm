@@ -351,11 +351,11 @@ sub Mover_B
                 mkdir($dirDuplicados);
             }
 
-            print "Muevo el archivo duplicado a ./dup\n";
             # Movemos el archivo que se encontraba originalmente en destino hacia la
             # carpeta de duplicados (dup/) con el número de secuencia correspondiente.
-            move $destino.$nombreArchivo, ($dirDuplicados.$nombreArchivo."."
-                .numberPadding($cantRepetidos, 3));
+            my $nombre_nuevo = $dirDuplicados.$nombreArchivo.".".numberPadding($cantRepetidos, 3);
+            my $nombre_viejo = $destino."/".$nombreArchivo;
+            move ($nombre_viejo, $nombre_nuevo) or die "Fallo el mover duplicado\n";
         }
     }
 
