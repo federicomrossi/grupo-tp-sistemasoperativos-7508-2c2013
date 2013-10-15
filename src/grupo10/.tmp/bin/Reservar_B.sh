@@ -48,8 +48,8 @@ readonly CHAR_SIN_PCyB="[\x00-\x2E|\x30-\x3A|\x3C-\xFF]"
 # Constante que representa caracteres ascii y no ascii, salvo los char ';' y ':'
 readonly CHAR_SIN_PCyDP="[\x00-\x39|\x3C-\xFF]"
 
-# DEBUG: Deben cambiar
-readonly LOG_PATH="../log/Reservar_B.log"
+# Constante que contiene el path del archivo de log
+readonly LOG_PATH="$LOGDIR/Reservar_B.log"
 
 # Funcion que escribe en el log
 # Recibe como parametros: 1- Tipo de mensaje, 2- Mensaje
