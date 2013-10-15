@@ -63,7 +63,7 @@ function log (){
 # Recibe como parametro: 1- El nombre del archivo.
 function validarDuplicados() {
 	# Se obtiene el nombre del archivo sin la extension de repeticion
-	local nombre_sin_duplicado=`echo $1 | grep -P "^[0-9]+-$CHAR_SIN_G+-$CHAR_SIN_P+"`
+	local nombre_sin_duplicado=`echo $1 | grep -o -P "^[0-9]+-$CHAR_SIN_G+-$CHAR_SIN_P+"`
 
 	# Si existe en $PROCDIR se descarta
 	if [ -a "$PROCDIR/$nombre_sin_duplicado" ]; then
