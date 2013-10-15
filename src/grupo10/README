@@ -25,6 +25,7 @@
 2- Iniciar
 ##########################################################################################################################################
 	a- Una vez que se complete la instalación podrá iniciar la ejecución del sistema RESER_B simplemente ejecutando el script Iniciar_B.sh
+	Se deberá correr el script de la siguiente forma " . Iniciar_B.sh"
 
 
 
