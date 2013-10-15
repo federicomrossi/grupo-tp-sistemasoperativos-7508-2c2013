@@ -346,14 +346,13 @@ error_al_instalar () {
 }
 
 limpiar_archivos_de_instalacion () {
-#	if [ -d "${GRUPO}/.tmp" ]
-#	then 
-#		log "I" "Eliminando archivos de instalación"
-#		`rm ${GRUPO}/.tmp/*/*`
-#		`rmdir ${GRUPO}/.tmp/*`
-#		`rmdir ${GRUPO}/.tmp`
-#    fi
-	echo "Limpieza correcta"
+	if [ -d "${GRUPO}/.tmp" ]
+	then 
+		log "I" "Eliminando archivos de instalación"
+		`rm ${GRUPO}/.tmp/*/*`
+		`rmdir ${GRUPO}/.tmp/*`
+		`rmdir ${GRUPO}/.tmp`
+    fi
 }
 
 instalar () {
@@ -469,7 +468,6 @@ instalar () {
 	
 	log "I" "Instalacion CONCLUIDA"
 
-	limpiar_archivos_de_instalacion
 }
 
 
