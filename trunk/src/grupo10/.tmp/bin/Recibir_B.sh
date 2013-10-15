@@ -13,7 +13,7 @@ MAESALA="$MAEDIR/salas.mae"
 
 # Constante que representa caracteres ascii y no ascii, salvo el delimitador ';'
 readonly CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]"
-readonly CHAR_SIN_PC_C="[\x00-\x3A|\x3C-\x43|\x45-\xFF]"
+readonly CHAR_SIN_PC_C="[\x00-\x2B|\x2D-\x3A|\x3C-\xFF]"
 
 ########################FUNCTIONS########################
 function log1 (){
@@ -72,7 +72,7 @@ function validar_archivo_reservas()
 	# $f tiene el nombre del archivo
 	
 	#Validar formato
-	if [[ "$f" =~ ^[0-9]+-$CHAR_SIN_PC_C+@$CHAR_SIN_PC_C+-$CHAR_SIN_PC_C* ]] # =~ --> que cumpla con la expresion regular num-mail-abc
+	if [[ `echo "$f" | grep -P "^[0-9]+-$CHAR_SIN_PC_C+@$CHAR_SIN_PC_C+-$CHAR_SIN_PC_C*" | wc -l` -eq 1 ]] # =~ --> que cumpla con la expresion regular num-mail-abc
 	then
 		#Validar integridad
 		#Extraigo informacion del nombre del archivo de entrada
@@ -131,7 +131,7 @@ function validar_archivo_invitados()
 	# $f tiene el nombre del archivo
 	
 	#Validar formato
-	if [[ "$f" =~ ^$CHAR_SIN_PC_C*\.inv$ ]]
+	if [[ `echo "$f" | grep -P "^$CHAR_SIN_PC_C+\.inv" | wc -l` -eq 1 ]]
 	then
 		return 1
 	fi
@@ -192,6 +192,7 @@ function verificar_archivos_nuevos()
 }
 
 ########################DAEMON START########################
+
 verificar_inicializacion_ambiente
 if [ $? -eq 0 ]
 then
@@ -247,7 +248,7 @@ while true; do
 			mover_archivo_rechazado "Reserva" "Obra/Sala y Correo Inexistente"
 		else
 			validar_archivo_invitados
-			if [ $res -eq 1 ]
+			if [ $? -eq 1 ]
 				then
 					mover_archivo_recibido_invitados
 				else
