@@ -8,19 +8,11 @@
 #
 # FUNCIÓN IMPRIMIR_B
 # 
-# Comando que se encarga de ...
+# Comando que se encarga de Imprimir listados por pantalla (o grabarlos en archivo 
+# si corresponde) ciertos listados: Ranking de solicitantes, listado de disponibilidades
+# listado de invitados a cierto evento o impresión de tickets.
 #
-#
-# Parámetros
-# ##########
-#
-#
-# Códigos de retorno
-# ##################
-#
-# 0: La acción se llevó a cabo con éxito;
-# 1: 
-#
+
 
 
 #!/usr/bin/perl 
@@ -30,16 +22,13 @@ use Scalar::Util qw(looks_like_number);
 
 require 'lib_utilities.pl';
 
+$RESERVASOK = "$ENV{'PROCDIR'}/reservas.ok";
+$COMBOSDIS = "$ENV{'PROCDIR'}/combos.dis";
 
-################################## HARDCODEO
-
-$PROCDIR = "../procesados/";
-$RESERVASOK = "reservas.ok";
-$COMBOSDIS = "combos.dis";
-$REPODIR = "./";
-
-################################## END HARDCODEO
-
+# Variable que representa caracteres ascii y no ascii, salvo el delimitador ';'
+$CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]";
+# Variable que representa caracteres ascii y no ascii, salvo el delimitador '.'
+$CHAR_SIN_P="[\x00-\x2D|\x2F-\xFF]";
 
 
 ### CONFIGURACIÓN
@@ -59,23 +48,20 @@ $DISPON_EXT_ARCHIVO = ".dis";
 
 
 
-### CONSTANTES PARA LOS TEXTOS DE ERRORES
-
 # Variable que contiene el mensaje de error para el caso en que no se han
 # especificado parámetros de entrada.
-$errorCantidadNulaDeParametros = "-> No se han especificado parámetros de entrada. Para mas información ejecute
-Imprimir_B.pl -a\n";
+$errorCantidadNulaDeParametros = "No se han especificado parámetros de entrada. Para mas información ejecute: Imprimir_B.pl -a\n";
 
 # Variable que contiene el mensaje de error de combinacion de opciones
 $errorCombinacionOpciones = "
--> Ha ingresado una combinacion de opciones incorrecta. Por favor, verifique que el comando ingresado 
-   sea correcto y vuelva a intentarlo.
--> Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
+Ha ingresado una combinacion de opciones incorrecta. Por favor, verifique que el comando ingresado 
+sea correcto y vuelva a intentarlo.
+Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 # Variable que contiene el mensaje de error de repeticion de opciones
 $errorRepeticion = "
--> Ha ingresado una o varias opciones repetidas. Por favor, verifique que el comando ingresado sea correcto y vuelva a intentarlo.
--> Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
+Ha ingresado una o varias opciones repetidas. Por favor, verifique que el comando ingresado sea correcto y vuelva a intentarlo.
+Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 
 
@@ -203,11 +189,10 @@ sub disponibilidad {
 			}
 		}
 
-
 		## Procesamos los combos
 
 		# Abrimos el archivo de combos
-		open FILE, "$PROCDIR$COMBOSDIS" or return 1;
+		open FILE, "$COMBOSDIS" or die "No existe el archivo 'combos.dis' o no es posible abrirlo.\n";
 
 		# Iteramos sobre las líneas del archivo
 		while(<FILE>)
@@ -227,7 +212,6 @@ sub disponibilidad {
 		}
 
 		close(FILE);
-
 
 		# Si se encontraron registros con el id del combo, salimos del bucle
 		if((scalar @combos) > 0) { 
@@ -250,8 +234,7 @@ sub disponibilidad {
 			$nombreArchivo = <STDIN>;
 			chomp($nombreArchivo);
 
-			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1) 
-				and !($nombreArchivo eq "combos"))
+			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1))
 			{
 				last;
 			}
@@ -306,7 +289,7 @@ sub rankingDeSolicitantes {
 	my %solicitudes = ();
 
 	# Abrimos el archivo de reservas
-	open FILE, "$PROCDIR$RESERVASOK" or return 1;
+	open FILE, "$RESERVASOK" or die "No existe el archivo 'reservas.ok' o no es posible abrirlo\n";
 
 	# Iteramos sobre las líneas del archivo
 	while(<FILE>)
@@ -421,7 +404,7 @@ sub listadoDeTickets {
 	while($laClaveNoExiste > 0)
 	{
 		# Abrimos el archivo de reservas
-		open FILE, "$PROCDIR$RESERVASOK" or return 1;
+		open FILE, "$RESERVASOK" or return 1;
 
 		# Iteramos sobre las líneas del archivo
 		while(<FILE>)
@@ -524,8 +507,291 @@ sub listadoDeTickets {
 		}
 	}
 }
+ 
+## Subrutinas correspondientes a la opción i de Imprimir ##
+
+# Subrutina que guarda en la tabla de candidatos el evento correspondiente
+sub guardarEnCandidatos {
+	# Se guardan los parametros
+	my $ref_int = $_[0];
+	my $combo = $_[0];
+	my $butacas = $_[0];
+	
+	# Se obtiene el valor de la referecia interna
+	$ref_int =~ s/^($CHAR_SIN_PC+;){8}($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){4}$/$2/;
+
+	# Se obtiene el valor del combo
+	$combo =~ s/^(($CHAR_SIN_PC+;){5}($CHAR_SIN_PC+))(;$CHAR_SIN_PC+;)($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){5}$/$5;$1/;
+
+	# Se obtiene la cantidad de butacas reservadas
+	$butacas =~ s/^($CHAR_SIN_PC+;){9}($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){3}$/$2/;
+
+	# Para cada uno, se chequea si existe un archivo RI.inv
+	my @validos = grep(/^$ref_int.inv$/, @archivos);
+
+	# Si encontro algun archivo, lo guarda en la tabla
+	if (@validos) {
+		# Se guarda el valor del nombre del archivo
+		my $valor = $validos[0];
+
+		# Si ya existe una entrada para este combo, se añade a la lista
+		if ( exists($candidatos{$combo}) ) {
+			# Se chequea para no duplicar la entrada
+			if ( !grep(/^$valor$/, @{$candidatos{$combo}}) ) {
+				# Se agrega a la tabla la referencia interna
+				push (@{$candidatos{$combo}}, $validos[0]);
+			}
+		}
+		# Sino, se inserta una nueva entrada
+		else {
+			# Inserto en la tabla
+			@{$candidatos{$combo}} = $validos[0];
+		}
+		# Se agrega la cantidad de butacas confirmadas por esa referencia interna
+		# Si existe el valor en la tabla, entonces se suma, sin se lo agrega.
+		if ( exists($cant_reservas_ok{$ref_int}) ) {
+			$cant_reservas_ok{$ref_int} += $butacas;
+		}
+		else {
+			$cant_reservas_ok{$ref_int} = $butacas;
+		}
+	}
+}
+
+# Subrutina que procesa la opcion ingresara por el usuario
+# Recibe como parametros: 1- El numero maximo de opción, 2- Si debe guardar en archivo
+sub procesarOpcion {
+	# DEBUG
+	my $opcion = "";
+	my $mayor_opcion = $_[0];
+	my $debeGuardarArchivo = $_[1];
+
+	# Se lee la opcion provista por el usuario
+	do {
+		print "Número o código de evento (Si desea salir, presione 'S'):  ";
+		
+		# Se lee una opcion
+		$opcion = <STDIN>;
+
+		# Se elimina el \n o \r
+		chop($opcion);
+
+		print "\n";
+
+		# Se comprueba que sea correcta:
+		# - Si presiono 's' o 'S' -> salir.
+		if ( grep(/^[sS]$/, $opcion) ) {
+			print "Ud. decidió salir. Adiós!\n";
+			# Se retorna de la función con un 1
+			return 1;
+		}
+		# - Si empieza con 'C', se chequea que sea un evento valido
+		elsif ( grep(/^C/, $opcion) ){
+			# Si existe -> imprimir lista y salir.
+			foreach ( keys %candidatos ) {
+				if ( grep(/^$opcion;/, $_) ) {
+					print "Ud. ingresó el código: \"$opcion\"\n";
+					# Se imprime la lista de invitados pasandole el combo por parametros
+					imprimirLista($_, $debeGuardarArchivo);
+					# Se retorna de la función con un 1
+					return 0;
+				}
+			}
+			# Si no existe -> pedir nuevo ingreso
+			print "Ud. ingresó \"$opcion\" y es una opción incorrecta. Intente nuevamente:\n";
+		}
+		elsif ($opcion le $mayor_opcion && $opcion ge 0) {
+			print "Ud. ingresó el número de evento: \"$opcion\"\n";
+			# Se imprime la lista de invitados pasandole el combo por parametros
+			imprimirLista($claves_i[$opcion - 1], $debeGuardarArchivo);
+			# Se cambia el flag
+			return 0;
+		}
+		else {
+			print "Ud. ingresó \"$opcion\" y es una opción incorrecta. Intente nuevamente:\n";
+		}
+	} while (1);
+}
 
 
+# Subrutina que imprime la lista de invitados a cierto evento.
+# Se recibe por parametros: 1- Combo, 2- Si debe imprimir en archivo
+sub imprimirLista {
+	my $combo = $_[0];
+	my $ok = $_[1];
+	my $evento = $combo;
+	my $obra = $combo;
+	my $sala = $combo;
+	my $fecha = $combo;
+	my $referencia;
+	my $num_referencia;
+	my $cant_invitados;
+	my $total_invitados;
+	my $invitado;
+
+	# Se obtiene la lista de referencias internas para el evento
+	my @listaRef = @{$candidatos{$combo}};
+
+	# Se obtienen los elementos a imprimir
+	$evento =~ s/^($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){6}/$1/;
+	$obra =~ s/^($CHAR_SIN_PC+);($CHAR_SIN_PC+);($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){4}/$2-$3/;
+	$fecha =~ s/^($CHAR_SIN_PC+;){3}($CHAR_SIN_PC+);($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){2}/$2-$3/;
+	$sala =~ s/^($CHAR_SIN_PC+;){5}($CHAR_SIN_PC+);($CHAR_SIN_PC+)$/$2-$3/;
+
+	# Se crea el archivo a escribir si corresponde (si existe, se lo vacia)
+	if ( $ok ) {
+		open(ARCH, ">$ENV{'REPODIR'}/$evento.inv") or die "No se pudo crear el archivo '$evento.inv\n";
+	}
+	else {
+		open(VACIO, ">/dev/null");
+	}
+
+	# Se los imprime
+	print "Evento: $evento. Obra: $obra. Fecha y Hora: $fecha Hs. Sala: $sala.\n";
+	print { $ok ? ARCH : VACIO } "Evento: $evento. Obra: $obra. Fecha y Hora: $fecha Hs. Sala: $sala.\n";
+
+	# Para el id combo seleccionado, se imprime la lista de invitados
+	foreach ( @{$candidatos{$combo}} )  {
+		# Se resetea el valor acumulado de cantidad de invitados
+		$total_invitados = 0;
+
+		# Se le quita la extension '.inv' que contiene la referencia interna
+		$referencia = $_;
+		$num_referencia = $_;
+		$num_referencia =~ s/^($CHAR_SIN_P+).inv/$1/;
+
+		# Se imprime la referencia actual
+        print "Referencia: $num_referencia\n";
+        print { $ok ? ARCH : VACIO } "Referencia: $num_referencia\n";
+        
+        # Si el archivo de invitados se encuentra vacio, se imprime mensaje correspondiente
+        if (-z "$referencia" ) {
+        	print "Sin listado de invitados.\n";
+        	print { $ok ? ARCH : VACIO } "Sin listado de invitados.\n";
+        }
+        else {
+	        # Se abre el archivo y se imprimen los invitados correspondientes
+	        my @imprimir = split("\n|\n\r|\r\n", `cat $ENV{'REPODIR'}/$referencia`);
+	        foreach (@imprimir) {
+	        	$invitado = $_;
+	        	$cant_invitados = $_;
+
+	        	# Se queda con el nombre del invitado
+	        	$invitado =~ s/^($CHAR_SIN_PC+)(;$CHAR_SIN_PC*);($CHAR_SIN_PC*)/$1/;
+
+	        	# Se queda solamente con la cantidad de acompañantes
+	        	$cant_invitados =~ s/^($CHAR_SIN_PC+)(;$CHAR_SIN_PC*);($CHAR_SIN_PC*)/$3/;
+
+	        	# Si el campo de cantidad de acompañantes existia, entonces se lo suma al total y se imprime
+	        	if ( $cant_invitados ) {
+		        	# Se acumula al total de invitados lo recien calculado
+		        	$total_invitados += $cant_invitados + 1;
+	        	}
+	        	# Si ese campo no estaba, se le guarda el valor de 0
+	        	else {
+	        		# Se le guarda un 0
+	        		$cant_invitados = 0;
+	        		# Se le suma uno a la cantidad total de invitados
+	        		$total_invitados += 1;
+	        	}
+
+	        	# Se imprime el mensaje al usuario
+	        	print "\t- $invitado, $cant_invitados, $total_invitados\n";
+	        	print { $ok ? ARCH : VACIO } "\t- $invitado, $cant_invitados, $total_invitados\n";
+	        }
+		}
+		# Se imprime la cantidad de butacas confirmadas
+		print "\t* Cantidad de reservas confirmadas: $cant_reservas_ok{$num_referencia}\n";
+		print { $ok ? ARCH : VACIO } "\t* Cantidad de reservas confirmadas: $cant_reservas_ok{$num_referencia}\n";
+		print "\t* Total acumulado de invitados: $total_invitados\n";
+		print { $ok ? ARCH : VACIO } "\t* Total acumulado de invitados: $total_invitados\n";
+    }
+
+	# Si corresponde, se cierar el archivo
+	if ( $ok ) {
+		close(ARCH);
+	}
+	else {
+		close VACIO;
+	}
+}
+
+# Recibe por parametros si debe guardar en archivo o no
+sub invitadosAEvento {
+	my $debeGuardarArchivo = $_[0];
+
+	# Variable que contiene los eventos candidatos
+	our %candidatos;
+	# Guarda la cantidad de reservas aceptadas por cada referencia interna
+	our %cant_reservas_ok;
+	our @claves_i;
+	my $linea;
+	my $k = 1;
+	my $i = 1;
+
+	# Se busca en el archivo 'reservas.ok' los registros que contienen referencia interna
+	open(reservas_ok, "<$ENV{'PROCDIR'}/reservas.ok") or die "No se pudo abrir el archivo 'reservas.ok'";
+
+	# Se lee una linea
+	$linea = <reservas_ok>;
+
+	# Se obtiene la lista de archivos en REPODIR '.inv' separados con coma
+	my $lista_archivos=`ls -mp $ENV{'REPODIR'}`;
+
+	# Se guarda la lista en un array, salteando los caracteres de separador
+	our @archivos = split(", |,\n", $lista_archivos);
+
+	# Para cada linea, se toma la que tenga referencia interna del solicitante
+	while($linea){
+
+		# Si la linea contiene el campo opcional de la ref interna del solicitante,
+		if ($linea =~ m[($CHAR_SIN_PC+;){12}$CHAR_SIN_PC+]) {
+
+			# Se guardan los campos en la tabla de candidatos
+			guardarEnCandidatos $linea;
+		}
+
+		# Se lee otra linea
+		$linea = <reservas_ok>;
+	}
+	# Se cuenta la cantidad de claves que hay
+	@claves_i = keys %candidatos;
+	$tam = @claves_i;
+
+	my $codigo_evento="";
+
+	# Se emite un mensaje al usuario
+	if ($tam == 0) {
+		print "Lo lamentamos, no hay eventos candidatos a imprimir.\n";
+	}
+	else {
+		print "Hay $tam eventos candidatos y son:\n";
+
+		# Se le presenta al usuario el listado de candidatos
+		for ($k = 0; $k < $tam; $k++) {
+			$i = $k + 1;
+			# Se guarda el codigo evento y se lo edita para obtener solamente 'C[0-9]+'
+			$codigo_evento = $claves_i[$k];
+			$codigo_evento =~ s/^($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){6}$/$1/;
+
+			# Se imprime un mensaje al usuario
+			print "- Evento $i con código: $codigo_evento tiene los siguientes valores: \n";
+			foreach (@{$candidatos{$claves_i[$k]}}) {
+				print "\t- $_\n";
+			}
+		}
+
+		# Se emite mensaje al usuario
+		print "NOTA: Para seleccionar algún evento a imprimir, por favor seleccione por número de evento o por código.\n";
+
+		# Se procesa la opcion ingresada por el usuario
+		# Se le pasa ademas si debe imprimir o no en archivo
+		procesarOpcion $i, $debeGuardarArchivo;
+	}
+
+	# Se cierra el archivo de reservas ok
+	close(reservas_ok);
+}
 
 
 
@@ -534,14 +800,37 @@ sub listadoDeTickets {
 # MAIN							#
 # ############################# #
 
-
+# Variables
+my %Opciones;
+# # Contiene los filehandles a escribir
+# our @filehandles;
 # Se obtiene la cantidad inicial de argumentos
 my $cantArg = scalar @ARGV;
 
+# Si no esta Inicializado el AMBIENTE sale con retorno 1 y no ejecuta el comando
+if ( -z $ENV{'GRUPO'} ) {
+        print "ERROR: Falta inicializar Ambiente";
+        exit 1;
+}
+
+# Verifico que Imprimir no se encuentre en ejecución
+my $proceso_viejo=`pgrep -o "Imprimir_B.pl"`;
+my $proceso_nuevo=`pgrep -n "Imprimir_B.pl"`;
+if ( $proceso_viejo ne $proceso_nuevo ) {
+        print "ERROR: Ya se encuentra corriendo un Imprimir_B.pl";
+        exit 2;
+}
+
+# Si no hay argumentos,
 if($cantArg == 0) {
 	print "$errorCantidadNulaDeParametros";
 	exit 1;
 }
+
+# # Se agrega el STDOUT a los filehandles
+# open(OUT, ">&STDOUT");
+# push(@filehandles, OUT);
+
 
 # Se obtienen las opciones insertadas en linea de comandos
 $ok = getopts('awidrt', \%Opciones);
@@ -573,7 +862,7 @@ if($ok) {
 		else { $escribir = 0; }
 
 		if(exists $Opciones{'i'}) {
-			print "Elegi i\n"; 
+			invitadosAEvento($escribir);
 		}
 		elsif (exists $Opciones{'d'}) {
 			disponibilidad($escribir);
@@ -603,3 +892,9 @@ if($ok) {
 else {
 	print "$errorCombinacionOpciones";
 }
+
+
+# # Se cierran los filehandles
+# foreach (@filehandles) {
+# 	close($_);
+# }
