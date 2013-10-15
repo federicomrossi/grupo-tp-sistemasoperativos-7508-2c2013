@@ -167,8 +167,7 @@ function invocar_Reservar_B()
 {
 	#Siempre que Reservar_B.sh no este ejecutando, lanzar. Verificar con comando ps - GRABA EN LOG
 	#Sino - GRABA EN LOG
-	igp=`ps r -ef | grep -v grep | grep '[.]/Reservar_B.sh' | wc -l`
-	if [ $igp -eq 0 ]
+	if [ -z $(pgrep Reservar_B.sh) ]
 	then
 		log1 "Comenzo la ejecucion del script Reservar_B.sh." "I"
 
