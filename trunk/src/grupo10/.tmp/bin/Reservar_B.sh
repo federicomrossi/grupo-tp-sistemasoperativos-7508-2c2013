@@ -545,6 +545,12 @@ motivo_rechazo=""
 # Tabla que contiene las disponibilidades de los eventos
 declare -A disponibilidades
 
+# Si no esta Inicializado el AMBIENTE sale con retorno 1 y no ejecuta el comando
+if [ -z $GRUPO ]; then
+        echo "ERROR: Falta inicializar Ambiente\n";
+        exit 1;
+fi
+
 # Busca la cantidad de elementos contenidos en el directorio
 cant_elementos=`ls -p $ACEPDIR | wc -l`
 
