@@ -9,7 +9,7 @@
 # FUNCIÓN IMPRIMIR_B
 # 
 # Comando que se encarga de Imprimir listados por pantalla (o grabarlos en archivo 
-# si corresponde) ciertos listados: Ranking de solicitantes, listado de disponibilidades
+# si corresponde): Ranking de solicitantes, listado de disponibilidades
 # listado de invitados a cierto evento o impresión de tickets.
 #
 
@@ -230,11 +230,11 @@ sub disponibilidad {
 		my $nombreArchivo = "";
 
 		while(1) {
-			print "\nIngrese un nombre de archivo para el listado: ";
+			print "\nIngrese un nombre de archivo para el listado sin su extensión (no puede ser 'combos'): ";
 			$nombreArchivo = <STDIN>;
 			chomp($nombreArchivo);
 
-			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1))
+			if(!($nombreArchivo eq "") and (index($nombreArchivo, "/") eq -1) and !($nombreArchivo eq "combos") )
 			{
 				last;
 			}
@@ -242,7 +242,7 @@ sub disponibilidad {
 			print "\nEl nombre de archivo ingresado no es válido.";
 		}
 		
-		$nombreArchivo = $REPODIR.$nombreArchivo.$DISPON_EXT_ARCHIVO;
+		$nombreArchivo = $ENV{'REPODIR'}."/".$nombreArchivo.$DISPON_EXT_ARCHIVO;
 
 		open(FILEHANDLER, "+>$nombreArchivo") or die "No se pudo crear el archivo.";
 
@@ -329,15 +329,15 @@ sub rankingDeSolicitantes {
 		$cantRepetidos = 1;
 
 		# Contabilizamos la cantidad de archivos con el mismo nombre
-		if(!opendir($REPODIR, $REPODIR)) { return 1; }
+		if(!opendir(DIR, $ENV{'REPODIR'})) { return 1; }
 
 		foreach(grep(/^($RANK_NOMBRE_ARCHIVO).(\d){3}$/, 
-			readdir($REPODIR)))
+			readdir(DIR)))
 		{
 			$cantRepetidos += 1;
 		}
 
-		closedir $REPODIR;
+		closedir DIR;
 
 		# Si la cantidad de digitos supera el máximo de 999 rankings
 		# retornamos error.
@@ -346,7 +346,7 @@ sub rankingDeSolicitantes {
 		}
 
 		# Armamos nombre para el archivo de ranking
-		$nombreArchivo = $REPODIR.$RANK_NOMBRE_ARCHIVO.".".
+		$nombreArchivo = $ENV{'REPODIR'}."/".$RANK_NOMBRE_ARCHIVO.".".
 			numberPadding($cantRepetidos, 3);
 
 		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
@@ -439,7 +439,7 @@ sub listadoDeTickets {
 	if($correspondeImprimir)
 	{
 		# Generamos el archivo de tickets
-		$nombreArchivo = $REPODIR.$idCombo.$TICKET_EXT_ARCHIVO;
+		$nombreArchivo = $ENV{'REPODIR'}."/".$idCombo.$TICKET_EXT_ARCHIVO;
 
 		open(FILEHANDLER, "+>$nombreArchivo") or return 3;
 
@@ -802,8 +802,6 @@ sub invitadosAEvento {
 
 # Variables
 my %Opciones;
-# # Contiene los filehandles a escribir
-# our @filehandles;
 # Se obtiene la cantidad inicial de argumentos
 my $cantArg = scalar @ARGV;
 
@@ -826,10 +824,6 @@ if($cantArg == 0) {
 	print "$errorCantidadNulaDeParametros";
 	exit 1;
 }
-
-# # Se agrega el STDOUT a los filehandles
-# open(OUT, ">&STDOUT");
-# push(@filehandles, OUT);
 
 
 # Se obtienen las opciones insertadas en linea de comandos
@@ -892,9 +886,3 @@ if($ok) {
 else {
 	print "$errorCombinacionOpciones";
 }
-
-
-# # Se cierran los filehandles
-# foreach (@filehandles) {
-# 	close($_);
-# }
