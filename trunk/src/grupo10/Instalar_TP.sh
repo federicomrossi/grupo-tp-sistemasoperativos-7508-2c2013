@@ -195,6 +195,42 @@ validar_dir () {
 	echo $retorno
 }
 
+validar_repeticion () {
+	if [ $1 == $BINDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $MAEDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $ARRIDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $ACEPDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $RECHDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $REPODIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $PROCDIR ]
+	then
+		echo 1
+	fi
+	if [ $1 == $PROCDIR ]
+	then
+		echo 1
+	fi
+	echo 0
+}
+
 def_dir () {
 	mensaje=$1
 	read -p "$1" opcion
@@ -206,6 +242,12 @@ def_dir () {
 	then
 		#Usar eleccion de usuario si es valida
 		dir_validado=`validar_dir $opcion`
+		#repeticion_validada=`validar_repeticion $dir_validado`
+		#if [ $repeticion_validada !=0 ]
+		#then
+		#	log I "Ya se encuentra reservado ese directorio, utilizando valor por defecto"
+		#	echo $2
+		#fi
 		if [ "$dir_validado" != "" ]
 		then 
 			echo $dir_validado
