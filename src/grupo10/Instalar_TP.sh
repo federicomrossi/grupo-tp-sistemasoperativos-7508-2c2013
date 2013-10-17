@@ -196,39 +196,40 @@ validar_dir () {
 }
 
 validar_repeticion () {
-	if [ $1 == $BINDIR ]
+	retorno="0"
+	if [ "$1" == "$BINDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $MAEDIR ]
+	if [ "$1" == "$MAEDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $ARRIDIR ]
+	if [ "$1" == "$ARRIDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $ACEPDIR ]
+	if [ "$1" == "$ACEPDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $RECHDIR ]
+	if [ "$1" == "$RECHDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $REPODIR ]
+	if [ "$1" == "$REPODIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $PROCDIR ]
+	if [ "$1" == "$PROCDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	if [ $1 == $PROCDIR ]
+	if [ "$1" == "$LOGDIR" ]
 	then
-		echo 1
+		retorno="1"
 	fi
-	echo 0
+	echo $retorno
 }
 
 def_dir () {
@@ -242,18 +243,19 @@ def_dir () {
 	then
 		#Usar eleccion de usuario si es valida
 		dir_validado=`validar_dir $opcion`
-		#repeticion_validada=`validar_repeticion $dir_validado`
-		#if [ $repeticion_validada !=0 ]
-		#then
-		#	log I "Ya se encuentra reservado ese directorio, utilizando valor por defecto"
-		#	echo $2
-		#fi
-		if [ "$dir_validado" != "" ]
-		then 
-			echo $dir_validado
-		else
-			log I "Entrada invalida, utilizando valor por defecto"
+		repeticion_validada=`validar_repeticion $dir_validado`
+		if [ "$repeticion_validada" == "1" ]
+		then
+			#log "I" "Ya se encuentra reservado ese directorio, utilizando valor por defecto"
 			echo $2
+		else
+			if [ "$dir_validado" != "" ]
+			then 
+				echo $dir_validado
+			else
+				log I "Entrada invalida, utilizando valor por defecto"
+				echo $2
+			fi
 		fi
 	fi	
 }
