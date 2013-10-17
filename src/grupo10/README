@@ -12,7 +12,7 @@
 	c- Copiar el archivo TPGRUPO10.tar.gz en el directorio de trabajo. (cp <origen>/TPGRUPO10.tar.gz <dir_instalacion>).
 	d- Descomprimir el archivo TPGRUPO10.tar.gz del directorio actual <dir_instalacion> (tar -xvzf <dir_instalacion>/TPGRUPO10.tar.gz).
 	e- Se generará un directorio llamado grupo10. Puede borrar si desea el archivo .tar.gz (rm <dir_instalacion>/TPGRUPO10.tar.gz).
-	f- Entrar en el directorio <dir_instalacion>/grupo10 y ejecutar el script Intalar_TP.sh. 
+	f- Entrar en el directorio <dir_instalacion>/grupo10 y ejecutar el script Intalar_TP.sh.  (Se deberá dar permisos de ejecución de ser necesario)
 
 	La instalación le pedirá que ingrese los distintos directorios para los ejecutables, archivos maestros, archivos externos,
 	archivos externos aceptados, archivos externos rechazados, listados de salida, archivos procesados, archivos de log.
