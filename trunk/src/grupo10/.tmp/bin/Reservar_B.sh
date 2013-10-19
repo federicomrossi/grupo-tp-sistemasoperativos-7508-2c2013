@@ -16,18 +16,6 @@
 # cuanto a formato, oportunidad y disponibilidad.
 #
 #
-# Parámetros
-# ##########
-#
-#
-# Códigos de retorno
-# ################
-#
-#
-
-
-# Chequeamos que se haya realizado la inicialización de ambiente
-# [ INSERTAR AQUÍ LA VERIFICACIÓN ]
 
 ##############################################################################################
 # Constantes
@@ -96,7 +84,7 @@ function archivoValido() {
 
 	# Si fue procesado, se devuelve 1
 	if [ "$ret_val_AV" != "0" ]; then
-		echo "El archivo $1 ya fue procesado."
+		echo "El archivo $1 se encuentra duplicado; es decir, ya fue procesado."
 		return $INVALIDO
 	fi
 
@@ -105,7 +93,7 @@ function archivoValido() {
 
 	# Si esta vacio, devuelve 1
 	if [ "$ret_val_AV" != "0" ]; then
-		echo "El archivo $1 se encuentra vacio"
+		echo "El archivo $1 se encuentra vacío."
 		return $INVALIDO
 	fi
 
@@ -115,7 +103,7 @@ function archivoValido() {
 	
 	# Si hay 1 o mas lineas invalidas, entonces se rechaza el archivo completo
 	if [ "$ret_val_AV" != "0" ]; then
-		echo "El archivo $1 tiene $ret_val_AV registros invalidos."
+		echo "El archivo $1 tiene $ret_val_AV registro/s invalido/s; es decir, no poseen el formato correspondiente a un archivo de reservas."
 		return $INVALIDO
 	fi
 
@@ -163,8 +151,8 @@ function procesarArchivo() {
 
 		# Si no es valida, se rechaza la reserva y se procesa otra linea del archivo
 		if [ "$ret_val_PA" != "0" ]; then
-			# Se rechaza la reserva
-			rechazarReserva "$linea" "$motivo" "$1"
+			# Se rechaza la reserva 
+			rechazarReserva "$linea" "$motivo" "$1" "$i"
 			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
@@ -177,7 +165,7 @@ function procesarArchivo() {
 		# Si la reserva tiene mas de 30 dias de anticipacion o menos de 2, se rechaza la reserva y se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
 			# Se rechaza la reserva
-			rechazarReserva "$linea" "$motivo" "$1"
+			rechazarReserva "$linea" "$motivo" "$1" "$i"
 			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
@@ -193,7 +181,7 @@ function procesarArchivo() {
 		# Si la hora no es valida, se rechaza la reserva y se lee la siguiente linea
 		if [ "$ret_val_PA" != "0" ]; then
 			# Se rechaza la reserva
-			rechazarReserva "$linea" "$motivo" "$1"
+			rechazarReserva "$linea" "$motivo" "$1" "$i"
 			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
@@ -206,8 +194,8 @@ function procesarArchivo() {
 		# Si no existe el evento seleccionado, se lee el siguiente registro
 		if [ "$combo" == "null" ]; then
 			# Se rechaza la reserva
-			motivo="El evento seleccionado no existe"
-			rechazarReserva "$linea" "$motivo" "$1"
+			motivo="El evento seleccionado no se encuentra en la base de datos actual"
+			rechazarReserva "$linea" "$motivo" "$1" "$i"
 			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
@@ -223,8 +211,8 @@ function procesarArchivo() {
 		# Si piden 0 butacas o menos, se rechaza la reserva
 		if [ "$cant_butacas" -le "0" ]; then
 			# Se rechaza la reserva
-			motivo="Se seleccionó una cantidad incorrecta de butacas."
-			rechazarReserva "$linea" "$motivo" "$1"
+			motivo="Se ha seleccionado una cantidad negativa de butacas."
+			rechazarReserva "$linea" "$motivo" "$1" "$i"
 			# Se contabiliza un registro mas invalido
 			cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 			continue
@@ -241,8 +229,8 @@ function procesarArchivo() {
 				disponibilidades=( ["$id_combo"]=$(( ${disponibilidades["$id_combo"]} - $cant_butacas )) )
 			else
 				# Si no hay lugar, se rechaza la reserva
-				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
-				rechazarReserva "$linea" "$motivo" "$1"
+				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva."
+				rechazarReserva "$linea" "$motivo" "$1" "$i"
 				# Se contabiliza un registro mas invalido
 				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 				continue
@@ -261,8 +249,8 @@ function procesarArchivo() {
 				butacas_disponibles=$(( $butacas_disponibles - $cant_butacas ))
 			else
 				# Si no hay butacas suficientes, se rechaza la reserva
-				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva"
-				rechazarReserva "$linea" "$motivo" "$1"
+				motivo="No hay la suficiente cantidad de butacas para aceptar la reserva."
+				rechazarReserva "$linea" "$motivo" "$1" "$i"
 				# Se contabiliza un registro mas invalido
 				cant_reservas_nok=$(( $cant_reservas_nok + 1 ))
 				continue
@@ -281,10 +269,11 @@ function procesarArchivo() {
 	done
 
 	# Se graba la cantidad de reservas OK y NOK
-	log "I" "Se finalizo el proceso del archivo $1. Cantidad de reservas aceptadas: $cant_reservas_ok. Cantidad de reservas rechazadas: $cant_reservas_nok."
+	log "I" "Se finalizo el proceso del archivo $1 correctamente"
+	log "I" "Cantidad de reservas aceptadas: $cant_reservas_ok. Cantidad de reservas rechazadas: $cant_reservas_nok."
 
 	# Se graba un mensaje de debug, en el cual: #Registros = #Aceptados + #Rechazados
-	log "D" "$cant_lineas_arch (registros) = $cant_reservas_ok (reservas aceptadas) + $cant_reservas_nok (reservas rechazadas)"
+	log "D" "$cant_lineas_arch registros = $cant_reservas_ok reservas aceptadas + $cant_reservas_nok reservas rechazadas"
 
 }
 
@@ -296,13 +285,13 @@ function rechazarArchivo() {
     perl -I$BINDIR -Mfunctions -e "functions::Mover_B('$ACEPDIR/$1', '$RECHDIR', 'Reservar_B')"
     
     # Se graba en el log un mensaje aclaratorio
-    log "M" "El archivo se rechaza por el siguiente motivo: $2"
+    log "I" "El archivo se rechaza por el siguiente motivo: $2"
 }
 
 # Funcion que rechaza la reserva e imprime en el log el motivo de rechazo.
 # Esta funcion graba un registro en el archivo 'reservas.nok'
 # Recibe como parametros: 1- El registro completo a rechazar, 2- El motivo del rechazo
-# 3- El nombre del archivo
+# 3- El nombre del archivo, 4- El número de registro en el archivo de reservas
 function rechazarReserva() {
 	local id_sala=""
 	local id_obra=""
@@ -335,6 +324,9 @@ function rechazarReserva() {
 
 	# Se arma el registro a guardar en el archivo
 	registro_nok="$1;$2;$id_sala;$id_obra;$correo;$fecha_hoy;$usuario"
+
+	# Se guarda un informe en el log
+	log "I" "La reserva $4 del archivo $3 no pudo ser aceptada. Motivo: $2"
 
 	# Se escribe el registro
 	echo "$registro_nok" >> "$PROCDIR/reservas.nok"
@@ -389,7 +381,7 @@ function validarFecha() {
 
 	# Compruebo si la fecha esta vacia
 	if [ -z "$fecha_a_validar" ]; then
-		echo "Error en los parametros ingresados en Reservar_B"
+		echo "Error en la fecha ingresada, se encuentra vacía"
 		return $INVALIDO
 	else
 		# Obtengo dia, mes y anio
@@ -406,7 +398,7 @@ function validarFecha() {
 		if [ "$validez" == "0" ]; then
 			return $VALIDO
 		else
-			echo "Se ingreso una fecha invalida"
+			echo "Se ingreso una fecha de evento invalida"
 			return $INVALIDO
 		fi
 	fi
@@ -421,7 +413,7 @@ function verificarAnticipacion() {
 	local hoy=`date +%D`
 
 	if [ -z "$fecha_funcion" ]; then
-		echo "Fecha invalida"
+		echo "Error en la fecha ingresada, se encuentra vacía"
 		return $INVALIDO
 	else
 
@@ -437,13 +429,13 @@ function verificarAnticipacion() {
 
 			# Si ('dias' >= 0) -> Rechazar
 			if [ "$distancia_dias" -ge "0" ]; then
-				echo "Reserva realizada con menos de 2 dias de anticipacion"
+				echo "Reserva realizada con menos de 2 (dos) días de anticipación"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
 			# Si es para una fecha vencida, la rechazo
 			elif [ "$distancia_dias" -lt "0" ]; then
-				echo "La fecha ingresada no corresponde con un evento vigente"
+				echo "La fecha ingresada ($fecha_funcion) es una fecha vencida"
 				# Se devuelve el estado 1
 				return $INVALIDO
 
@@ -452,7 +444,7 @@ function verificarAnticipacion() {
 			# Si la reserva tiene mas de 30 dias de anticipacion, la rechazo
 			# ('dias' > 30)
 			if [ "$distancia_dias" -gt "30" ]; then
-				echo "Reserva realizada con mas de 30 dias de anticipacion"
+				echo "Reserva realizada con más de 30 (treinta) días de anticipación"
 				# Se devuelve el estado 1
 				return $INVALIDO
 			else
@@ -477,7 +469,7 @@ function validarHora() {
 	if [ "$validez_hora" == "0" ]; then
 		return $VALIDO
 	else
-		echo "Hora de la función invalida"
+		echo "La hora de la función no se encuentra en formato hh:mm"
 		return $INVALIDO
 	fi
 }
