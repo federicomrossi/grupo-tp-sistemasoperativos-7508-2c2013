@@ -390,13 +390,14 @@ error_al_instalar () {
 }
 
 limpiar_archivos_de_instalacion () {
-	if [ -d "${GRUPO}/.tmp" ]
-	then 
-		log "I" "Eliminando archivos de instalación"
-		`rm ${GRUPO}/.tmp/*/*`
-		`rmdir ${GRUPO}/.tmp/*`
-		`rmdir ${GRUPO}/.tmp`
-    fi
+	#if [ -d "${GRUPO}/.tmp" ]
+	#then 
+	#	log "I" "Eliminando archivos de instalación"
+	#	`rm ${GRUPO}/.tmp/*/*`
+	#	`rmdir ${GRUPO}/.tmp/*`
+	#	`rmdir ${GRUPO}/.tmp`
+    #fi
+    log "I" "Eliminando archivos de instalación"
 }
 
 instalar () {

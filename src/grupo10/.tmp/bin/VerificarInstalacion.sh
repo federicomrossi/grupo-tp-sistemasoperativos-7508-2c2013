@@ -70,7 +70,7 @@ BIN (){
 			then 
 				codigo_err=2
 			else
-				if [ ! -f "$dir/Iniciar_B.sh" -o ! -f "$dir/Recibir_B.sh" -o ! -f "$dir/Reservar_B.sh" -o ! -f "$dir/Mover_B.pl" -o ! -f "$dir/Start_D.sh" -o ! -f "$dir/Stop_D.sh" -o ! -f "$dir/functions.pm" ]
+				if [ ! -f "$dir/Iniciar_B.sh" -o ! -f "$dir/Recibir_B.sh" -o ! -f "$dir/Reservar_B.sh" -o ! -f "$dir/Start_D.sh" -o ! -f "$dir/Stop_D.sh" -o ! -f "$dir/functions.pm" ]
 				then
 					codigo_err=1
 				fi
