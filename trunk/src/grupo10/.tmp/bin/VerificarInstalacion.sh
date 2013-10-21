@@ -216,7 +216,53 @@ PROC (){
 	return $codigo_err
 }
 
+LOGEXT () {
+	codigo_err=0
+	res=""
+	res=`grep "^LOGEXT" <$1 | cut -d "=" -f 2`
 
+	if [ "$res" == "" ]
+	then
+		codigo_err=2
+	fi	
+	return $codigo_err
+}
+
+LOGSIZE () {
+	codigo_err=0
+	res=""
+	res=`grep "^LOGSIZE" <$1 | cut -d "=" -f 2`
+
+	if [ "$res" == "" ]
+	then
+		codigo_err=2
+	fi	
+	return $codigo_err
+}
+
+DATASIZE () {
+	codigo_err=0
+	res=""
+	res=`grep "^DATASIZE" <$1 | cut -d "=" -f 2`
+
+	if [ "$res" == "" ]
+	then
+		codigo_err=2
+	fi	
+	return $codigo_err
+}
+
+SLEEPTIME () {
+	codigo_err=0
+	res=""
+	res=`grep "^SLEEPTIME" <$1 | cut -d "=" -f 2`
+
+	if [ "$res" == "" ]
+	then
+		codigo_err=2
+	fi	
+	return $codigo_err
+}
 
 COM () {
 	#echo "COM: Verificando instalacion. Archivo conf es $1"
@@ -230,9 +276,13 @@ COM () {
 	REC $1 ; ec_REC=$?
 	REP $1 ; ec_REP=$?
 	PROC $1 ; ec_PROC=$?
-	
+	LOGEXT $1; ec_LOGEXT=$?
+	LOGSIZE $1; ec_LOGSIZE=$?
+	DATASIZE $1; ec_DATASIZE=$?
+	SLEEPTIME $1; ec_SLEEPTIME=$?
+
 	#Separo el condicional solo por claridad
-	if [ $ec_MAE -gt 0 -o $ec_BIN -gt 0 -o $ec_LOG -gt 0 -o $ec_ARR -gt 0 -o $ec_REC -gt 0 -o $ec_ACEP -gt 0 -o $ec_REP -gt 0 -o $ec_PROC -gt 0 ]
+	if [ $ec_MAE -gt 0 -o $ec_BIN -gt 0 -o $ec_LOG -gt 0 -o $ec_ARR -gt 0 -o $ec_REC -gt 0 -o $ec_ACEP -gt 0 -o $ec_REP -gt 0 -o $ec_PROC -gt 0 -o $ec_LOGEXT -gt 0 -o $ec_LOGSIZE -gt 0 -o $ec_DATASIZE -gt 0 -o $ec_SLEEPTIME -gt 0 ]
 	then codigo_err=1
 	fi
 	
