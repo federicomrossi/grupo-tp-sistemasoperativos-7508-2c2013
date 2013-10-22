@@ -19,6 +19,7 @@
 use warnings;
 use Getopt::Std;
 use Scalar::Util qw(looks_like_number);
+use Switch;
 
 require 'lib_utilities.pl';
 
@@ -70,7 +71,59 @@ Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 # Subrutina que imprime la ayuda por la salida estandar.
 sub ayuda {
-	print `cat Ayuda`;
+	# print `cat .Ayuda`;	
+	system("less .Ayuda");
+}
+
+# Subrutina que genera un menu interactivo para el usuario
+sub displayMenu {
+	$opcion = 2;
+	# Variable que guarda si debe guardar en archivo
+	$debeGuardarArchivo = 0;
+	do {
+		if ( grep(/^p?[23456]$/, $opcion) ){
+			# Se imprime el menu
+			print `cat .MenuImprimir`;
+		}
+		else {
+			print "N° de Opción: ";
+		}
+		# Se obtiene la opción
+		$opcion = <STDIN>;
+		# Se elimina el \n
+		chop($opcion);
+		# Se modifica si debe guardar en archivo
+		$debeGuardarArchivo = 0;
+		# - Si presiono '6'-> salir.
+		if ( grep(/^6$/, $opcion) ) {
+			print "Adiós!\n";
+			# Se retorna de la función con un 1
+			return 1;
+		}
+		# - Si presionó '1', mostrar ayuda
+		elsif ( grep(/^1$/, $opcion) ) {
+			ayuda();
+		}
+		# Si empieza con 'p', se busca que este entre 2 y 5 la opción
+		elsif ( grep(/^p?[2-5]$/, $opcion) ) {
+			if ( grep(/^p/, $opcion) ) {
+				$debeGuardarArchivo = 1;
+				$opcion = `echo $opcion | grep -o [2-5]`;
+				chop($opcion);
+			}
+			switch ($opcion) {
+				case 2 { print "\nDISPONIBILIDADES\n"; disponibilidad($debeGuardarArchivo); }
+				case 3 { print "\nINVITADOS\n"; invitadosAEvento($debeGuardarArchivo); }
+				case 4 { print "\nRANKING\n"; rankingDeSolicitantes($debeGuardarArchivo); }
+				case 5 { print "\nTICKETS\n"; listadoDeTickets($debeGuardarArchivo); }
+			}
+		}
+		# Sino, se eligió una opción incorrecta
+		else {
+			print "Ud. eligió la opción \"$opcion\" y es incorrecta. Por favor vuelva a intentarlo.\n";
+		}
+		
+	} while(1)
 }
 
 
@@ -111,10 +164,10 @@ sub disponibilidad {
 			next;
 		}
 
-		print "Opción inválida. ";
+		print "Opción inválida. \n";
 	}
 
-
+	print "\n(Recuerde que los ID Obra son números impares y los ID Sala son números pares).";
 
 	# Variables auxiliares
 	$campoDeBusqueda = 0;
@@ -765,7 +818,7 @@ sub invitadosAEvento {
 		print "Lo lamentamos, no hay eventos candidatos a imprimir.\n";
 	}
 	else {
-		print "Hay $tam eventos candidatos y son:\n";
+		print "Hay $tam evento/s candidato/s y es/son:\n";
 
 		# Se le presenta al usuario el listado de candidatos
 		for ($k = 0; $k < $tam; $k++) {
@@ -775,10 +828,11 @@ sub invitadosAEvento {
 			$codigo_evento =~ s/^($CHAR_SIN_PC+)(;$CHAR_SIN_PC+){6}$/$1/;
 
 			# Se imprime un mensaje al usuario
-			print "- Evento $i con código: $codigo_evento tiene los siguientes valores: \n";
-			foreach (@{$candidatos{$claves_i[$k]}}) {
-				print "\t- $_\n";
-			}
+			print "\t- Evento $i con código: $codigo_evento\n";
+			# print "- Evento $i con código: $codigo_evento tiene los siguientes valores: \n";
+			# foreach (@{$candidatos{$claves_i[$k]}}) {
+			# 	print "\t- $_\n";
+			# }
 		}
 
 		# Se emite mensaje al usuario
@@ -827,7 +881,7 @@ if($cantArg == 0) {
 
 
 # Se obtienen las opciones insertadas en linea de comandos
-$ok = getopts('awidrt', \%Opciones);
+$ok = getopts('awidrtm', \%Opciones);
 
 if($ok) {
 
@@ -848,8 +902,8 @@ if($ok) {
 	}
 
 	# Si hay exactamente 2 opciones, se busca que exista -w.
-	# Si hay una opcion, se busca que no exista ni -w ni -a
-	elsif (($tamanio == 2 && exists $Opciones{'w'}) || ($tamanio == 1 && !exists $Opciones{'w'} && !exists $Opciones{'a'})) {
+	# Si hay una opcion, se busca que no exista ni -w ni -a ni -m
+	elsif (($tamanio == 2 && exists $Opciones{'w'}) || ($tamanio == 1 && !exists $Opciones{'w'} && !exists $Opciones{'a'} && !exists $Opciones{'m'})) {
 		
 		# Evaluamos si va a escribirse en archivo
 		if (exists $Opciones{'w'}) { $escribir = 1; }
@@ -876,6 +930,11 @@ if($ok) {
 	# Si el tamanio es 1 y pidieron la ayuda
 	elsif ($tamanio == 1 && exists $Opciones{'a'}) {
 		ayuda();
+	}
+
+	# Si el tamanio es 1 y pidieron el menu interactivo
+	elsif ($tamanio == 1 && exists $Opciones{'m'}) {
+		displayMenu();
 	}
 
 	# Se ingresaron otra lista de opciones incorrectas
