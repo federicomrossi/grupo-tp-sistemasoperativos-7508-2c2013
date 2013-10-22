@@ -68,8 +68,7 @@ Para ver la ayuda, ingrese: perl Imprimir_B -a.\n\n";
 
 # Subrutina que imprime la ayuda por la salida estandar.
 sub ayuda {
-	# print `cat .Ayuda`;	
-	system("less .Ayuda");
+	system("less .AyudaComando");
 }
 
 # Subrutina que genera un menu interactivo para el usuario
@@ -99,7 +98,7 @@ sub displayMenu {
 		}
 		# - Si presionó '1', mostrar ayuda
 		elsif ( grep(/^1$/, $opcion) ) {
-			ayuda();
+			system("less .AyudaMenu");
 		}
 		# Si empieza con 'p', se busca que este entre 2 y 5 la opción
 		elsif ( grep(/^p?[2-5]$/, $opcion) ) {

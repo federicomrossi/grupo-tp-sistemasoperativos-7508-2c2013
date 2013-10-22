@@ -1,0 +1,19 @@
+Uso: perl ./Imprimir_B OPCION
+o: perl ./Imprimir_B -w OPCION
+
+Imprime en pantalla o graba en archivo (utlilzando -w) la informacion correspondiente a OPCION.
+
+NOTA: Todos las opciones pueden ser combinadas con -w, salvo que sea especificado lo contrario.
+
+OPCION:		DESCRIPCIÓN:
+  -a  ------> Muestra la ayuda. No puede ser combinado con -w.
+
+  -d  ------> Genera una lista de disponibilidades para una obra o una sala.
+  
+  -i  ------> Genera una lista de invitados a un evento.
+  
+  -m  ------> Muestra un menú interactivo para Imprimir_B. No puede ser combinado con -w.
+
+  -r  ------> Genera un ranking con los 10 principales solicitantes de reservas.
+  
+  -t  ------> Genera un listado de tickets a imprimir.
