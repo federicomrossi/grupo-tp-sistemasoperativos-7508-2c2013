@@ -28,6 +28,8 @@ Guía de uso general
 
 	Inmediatamente comenzará a correr la aplicación procesando archivos de reservas y guardando los cambios relevantes en los archivos de reservas (principalmente 'combos.dis'). A partir de ahí, la aplicació le irá facilitando al usuario los pasos posibles a seguir.
 
+	Si desea reinstalar y volver a Iniciar la aplicacion deberá ejecutar el Iniciar en una nueva terminal.
+
 -------------------------------------------------------------------------------------------------------------------------
 
 3- Ejecución demonio RESER_B10 ® 
