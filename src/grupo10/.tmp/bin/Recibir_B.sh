@@ -39,21 +39,6 @@ function verificar_inicializacion_ambiente()
 	return 0
 }
 
-function verificar_archivos_maestros()
-{
-	#Verifica que los archivos maestros contenga el formato correcto.
-
-	#Maestro de sucursales
-	qmsuc=`cat $MAESUC | grep -v -E -e "^[0-9]+,[^,]+,[0-9]+,[^,]+,[^,]+,[^,]+,[0-3][0-9]/[0-1][0-9]/[0-2][0-9]{3},([0-3][0-9]/[0-1][0-9]/[0-2][0-9]{3})?$" | wc -l`
-	
-	if [ $qmsuc -eq 0 ]
-	then
-		return 1
-	fi
-
-	return 0
-}
-
 function verificar_ya_ejecutando()
 {
 	#Verifica si ya se esta ejecutando un Recibir_B.
@@ -199,16 +184,6 @@ then
 else
 	log1 "La inicializacion de ambiente fue erronea. Se cancela la ejecucion de Recibir_B" "SE"
 	echo "La inicializacion de ambiente fue erronea. Se cancela la ejecucion de Recibir_B."
-	exit 1
-fi
-
-verificar_archivos_maestros
-if [ $? -eq 1 ]
-then
-	log1 "La validacion de los archivos maestros fue satisfactoria." "I"
-else
-	log1 "La validacion de los archivos maestros fue erronea. Se cancela la ejecucion de Recibir_B" "SE"
-	echo "La validacion de los archivos maestros fue erronea. Se cancela la ejecucion de Recibir_B."
 	exit 1
 fi
 
