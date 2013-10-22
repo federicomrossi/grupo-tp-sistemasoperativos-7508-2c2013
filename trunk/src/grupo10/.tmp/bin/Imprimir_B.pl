@@ -23,9 +23,6 @@ use Switch;
 
 require 'lib_utilities.pl';
 
-$RESERVASOK = "$ENV{'PROCDIR'}/reservas.ok";
-$COMBOSDIS = "$ENV{'PROCDIR'}/combos.dis";
-
 # Variable que representa caracteres ascii y no ascii, salvo el delimitador ';'
 $CHAR_SIN_PC="[\x00-\x3A|\x3C-\xFF]";
 # Variable que representa caracteres ascii y no ascii, salvo el delimitador '.'
@@ -860,16 +857,19 @@ my %Opciones;
 my $cantArg = scalar @ARGV;
 
 # Si no esta Inicializado el AMBIENTE sale con retorno 1 y no ejecuta el comando
-if ( -z $ENV{'GRUPO'} ) {
-        print "ERROR: Falta inicializar Ambiente";
+if ( !$ENV{'GRUPO'} ) {
+        print "ERROR: Falta inicializar Ambiente\n";
         exit 1;
 }
+
+$RESERVASOK = "$ENV{'PROCDIR'}/reservas.ok";
+$COMBOSDIS = "$ENV{'PROCDIR'}/combos.dis";
 
 # Verifico que Imprimir no se encuentre en ejecución
 my $proceso_viejo=`pgrep -o "Imprimir_B.pl"`;
 my $proceso_nuevo=`pgrep -n "Imprimir_B.pl"`;
 if ( $proceso_viejo ne $proceso_nuevo ) {
-        print "ERROR: Ya se encuentra corriendo un Imprimir_B.pl";
+        print "ERROR: Ya se encuentra corriendo un Imprimir_B.pl\n";
         exit 2;
 }
 
