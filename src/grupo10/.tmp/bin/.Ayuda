@@ -1,0 +1,25 @@
+
+----------------------------------Ayuda Imprimir_B---------------------------------------
+
+Este comando permite realizar consultas e imprimirlas, ya sea por salida estándar o en un
+archivo. Las consultas pueden ser sobre disponibilidades, invitados a eventos, ranking 
+de solicitantes o impresión de tickets.
+
+N° OPCION  OPCION		DESCRIPCIÓN
+
+  (2)	    Disponibilidades	> Genera una lista de butacas disponibles para un id obra, un id 
+				  sala o un rango de id obras o id salas. Recordar que los id obra 
+				  son números impares mientras que los de sala son impares.
+				  
+  (3) 	    Invitados		> Genera una lista de invitados confirmados a un evento. Se puede 
+				  seleccionar por código de evento o por número relativo en la lista
+				  de candidatos.
+
+  (4)	    Ranking		> Genera un ranking con los 10 principales solicitantes de reservas.
+				  
+  (5)       Tickets		> Genera un listado de tickets a imprimir.
+
+----------------------------------Fin Ayuda Imprimir_B-----------------------------------
+
+Presione 'q' para salir.
+
