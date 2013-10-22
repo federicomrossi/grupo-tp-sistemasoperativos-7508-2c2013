@@ -32,9 +32,29 @@ Guía de uso general
 
 3- Imprimir resultados en RESER_B10 ® 
 
-	a- Se le podrá pedir a la aplicación que muestre los resultados de las reservas realizadas a través del comando Imprimir_B. 
-	Se deberá correr el script de la siguiente forma "perl ./Imprimir_B.pl [OPCIÓN/ES]", donde opción debe ser '-a' si se quiere obtener la ayuda del comando.
+	a- Este comando permite realizar consultas de disponibilidad, emitir el ranking de los 10 principales solicitantes de entradas,
+	generar la lista de invitados confirmados a cierto evento o imprimir tickets de entradas. 
+	Se deberá correr el script del siguiente modo:
 
+	Uso: perl ./Imprimir_B OPCION
+	o: perl ./Imprimir_B -w OPCION
+
+	Imprime en pantalla o graba en archivo (utlilzando -w) la informacion correspondiente a OPCION.
+
+	NOTA: Todos las opciones pueden ser combinadas con -w, salvo que sea especificado lo contrario.
+
+	OPCION:		DESCRIPCIÓN:
+	  -a  ------> Muestra la ayuda. No puede ser combinado con -w.
+
+	  -d  ------> Genera una lista de disponibilidades para una obra o una sala.
+	  
+	  -i  ------> Genera una lista de invitados a un evento.
+	  
+	  -m  ------> Muestra un menú interactivo para Imprimir_B. No puede ser combinado con -w.
+
+	  -r  ------> Genera un ranking con los 10 principales solicitantes de reservas.
+	  
+	  -t  ------> Genera un listado de tickets a imprimir.
 
 =========================================================================================================================
 
