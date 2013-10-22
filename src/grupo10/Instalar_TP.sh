@@ -397,6 +397,18 @@ limpiar_archivos_de_instalacion () {
 	#	`rmdir ${GRUPO}/.tmp/*`
 	#	`rmdir ${GRUPO}/.tmp`
     #fi
+    #BINDIR=""
+	#MAEDIR=""
+	#ARRIDIR=""
+	#ACEPDIR=""
+	#RECHDIR=""
+	#REPODIR=""
+	#PROCDIR=""
+	#LOGDIR=""
+	#LOGEXT=""
+	#LOGSIZE=""
+	#DATASIZE=""
+	#SLEEPTIME=""
     log "I" "Eliminando archivos de instalación"
 }
 
@@ -550,6 +562,7 @@ then
 		log I "Estado de la instalación: COMPLETA"
 		log I "Proceso de Instalación Cancelado"
 		# Se termina la ejecución porque ya está todo instalado
+		limpiar_archivos_de_instalacion
 		exit 0
 	fi
 	#Si pasa por aca es que la instalación no está completa
